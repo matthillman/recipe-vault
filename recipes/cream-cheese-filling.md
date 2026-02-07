@@ -9,5 +9,3 @@
 ### Process
 
 1. Mix until smooth and easily spreadable.
-
----

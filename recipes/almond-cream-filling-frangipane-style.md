@@ -16,5 +16,3 @@
 1. Cream butter, cream cheese, and sugar until smooth.
 2. Mix in egg, extracts, then almond flour and AP flour.
 3. Use immediately or refrigerate up to 3 days.
-
----

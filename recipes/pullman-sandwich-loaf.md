@@ -23,5 +23,3 @@
 4. Shape and pan.
 5. Proof until dough is ½–¾" below lid.
 6. Bake covered at 375°F for 40–45 minutes.
-
----

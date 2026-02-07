@@ -34,5 +34,3 @@
 4. Shape loaf; roll exterior in oats.
 5. Short room-temp proof, then cold-proof 14–24 hours.
 6. Bake covered at 500°F for 15 minutes; uncover and finish at 450°F ~20 minutes.
-
----

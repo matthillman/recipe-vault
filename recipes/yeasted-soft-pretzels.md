@@ -31,5 +31,3 @@
 3. Divide into 8; roll 24" ropes; shape.
 4. Boil 30 seconds per pretzel.
 5. Egg wash, salt, bake at 450°F for 12–14 minutes.
-
----

@@ -26,5 +26,3 @@
 5. Divide cold, pre-shape, rest 20–30 minutes.
 6. Final shape; proof 60–90 minutes at 75–78°F.
 7. Bake 475–485°F with steam for 22–25 minutes.
-
----

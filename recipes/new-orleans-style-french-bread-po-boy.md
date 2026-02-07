@@ -20,7 +20,3 @@
 3. Divide, rest briefly, shape long loaves.
 4. Proof until slightly puffy.
 5. Bake hot on sheet pan with steam for pale, thin crust.
-
----
-
-# II. Modular Fillings & Components

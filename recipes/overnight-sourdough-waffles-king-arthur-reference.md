@@ -29,5 +29,3 @@
 * Replace 10–15% flour with cornstarch
 * Use oil or clarified butter
 * Cook fully, then vent briefly before serving
-
----

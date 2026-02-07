@@ -10,7 +10,3 @@
 
 1. Warm maple syrup slightly.
 2. Whisk into powdered sugar to desired thickness.
-
----
-
-# III. Reference Frameworks & Techniques

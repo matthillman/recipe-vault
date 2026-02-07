@@ -22,5 +22,3 @@
 4. Proof 3–5 hours at room temp **or** cold-retard overnight.
 5. Transfer to oiled pan, stretch gently, dimple, oil generously.
 6. Bake at 450°F (232°C) for 30–40 minutes until deeply golden.
-
----
