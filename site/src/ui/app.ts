@@ -105,6 +105,17 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
+function svgEl<K extends keyof SVGElementTagNameMap>(
+  tag: K,
+  attrs: Record<string, string> = {},
+  children: Array<Node> = [],
+): SVGElementTagNameMap[K] {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  for (const child of children) node.append(child);
+  return node;
+}
+
 function textNode(text: string) {
   return document.createTextNode(text);
 }
@@ -119,6 +130,31 @@ function supportsWakeLock() {
 function parseSortMode(raw: string | null): SortMode {
   if (raw === "title_asc" || raw === "title_desc" || raw === "updated_desc") return raw;
   return "updated_desc";
+}
+
+function sortIcon() {
+  // Simple "sort" icon (bars + chevrons), no external deps.
+  return svgEl(
+    "svg",
+    {
+      class: "icon",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round",
+      "aria-hidden": "true",
+    },
+    [
+      svgEl("path", { d: "M3 6h10" }),
+      svgEl("path", { d: "M3 12h14" }),
+      svgEl("path", { d: "M3 18h18" }),
+      svgEl("path", { d: "M17 8l2-2 2 2" }),
+      svgEl("path", { d: "M19 6v8" }),
+      svgEl("path", { d: "M21 16l-2 2-2-2" }),
+    ],
+  );
 }
 
 export function mountApp(root: HTMLElement) {
@@ -172,7 +208,9 @@ export function mountApp(root: HTMLElement) {
   });
 
   const sortDetails = el("details") as HTMLDetailsElement;
-  const sortSummary = el("summary", { class: "pill", role: "button" }, ["Sort"]);
+  const sortSummary = el("summary", { class: "pill icon-pill", role: "button" });
+  const sortA11yLabel = el("span", { class: "sr-only" });
+  sortSummary.append(sortIcon(), sortA11yLabel);
   const sortMenu = el("div", { class: "sort-menu", role: "menu" });
   sortDetails.append(sortSummary, sortMenu);
   const sortWrap = el("div", { class: "sort" });
@@ -211,7 +249,10 @@ export function mountApp(root: HTMLElement) {
   };
 
   const updateSortUI = () => {
-    sortSummary.textContent = `Sort: ${sortModeLabel(sortMode)}`;
+    const label = `Sort: ${sortModeLabel(sortMode)}`;
+    sortA11yLabel.textContent = label;
+    sortSummary.title = label;
+    sortSummary.setAttribute("aria-label", label);
     for (const btn of sortMenu.querySelectorAll<HTMLButtonElement>("button[data-sort]")) {
       btn.setAttribute("aria-checked", btn.dataset.sort === sortMode ? "true" : "false");
     }
