@@ -107,6 +107,12 @@ function textNode(text: string) {
   return document.createTextNode(text);
 }
 
+const KEEP_AWAKE_KEY = "recipeBox.keepAwake";
+
+function supportsWakeLock() {
+  return Boolean((navigator as unknown as { wakeLock?: unknown }).wakeLock);
+}
+
 export function mountApp(root: HTMLElement) {
   root.replaceChildren();
 
@@ -123,12 +129,73 @@ export function mountApp(root: HTMLElement) {
     "aria-label": "Search recipes",
   });
   searchWrap.append(searchInput);
-  topbarInner.append(brand, searchWrap);
+
+  const keepAwakeBtn = el("button", {
+    class: "pill",
+    type: "button",
+    title: supportsWakeLock()
+      ? "Prevent the screen from sleeping while this tab is visible"
+      : "Wake Lock not supported in this browser",
+    "aria-label": "Toggle keep screen awake",
+  });
+
+  topbarInner.append(brand, searchWrap, keepAwakeBtn);
   topbar.append(topbarInner);
 
   const content = el("main", { class: "content" });
   shell.append(topbar, content);
   root.append(shell);
+
+  let wakeLockSentinel: unknown | null = null;
+  let keepAwake = window.localStorage.getItem(KEEP_AWAKE_KEY) === "1";
+
+  const updateKeepAwakeUI = () => {
+    const on = keepAwake && Boolean(wakeLockSentinel);
+    keepAwakeBtn.textContent = on ? "Awake: On" : "Awake: Off";
+    keepAwakeBtn.classList.toggle("on", on);
+    keepAwakeBtn.toggleAttribute("disabled", !supportsWakeLock());
+  };
+
+  const releaseWakeLock = async () => {
+    const sentinel = wakeLockSentinel as { release?: () => Promise<void> } | null;
+    wakeLockSentinel = null;
+    updateKeepAwakeUI();
+    if (sentinel?.release) {
+      try {
+        await sentinel.release();
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  const acquireWakeLock = async () => {
+    if (!supportsWakeLock()) return;
+    if (!keepAwake) return;
+    if (document.visibilityState !== "visible") return;
+    if (wakeLockSentinel) return;
+
+    const navAny = navigator as unknown as {
+      wakeLock: { request: (type: "screen") => Promise<unknown> };
+    };
+
+    try {
+      wakeLockSentinel = await navAny.wakeLock.request("screen");
+      const sentinelAny = wakeLockSentinel as unknown as {
+        addEventListener?: (name: string, cb: () => void) => void;
+      };
+      sentinelAny.addEventListener?.("release", () => {
+        wakeLockSentinel = null;
+        updateKeepAwakeUI();
+      });
+      updateKeepAwakeUI();
+    } catch {
+      keepAwake = false;
+      window.localStorage.setItem(KEEP_AWAKE_KEY, "0");
+      wakeLockSentinel = null;
+      updateKeepAwakeUI();
+    }
+  };
 
   let manifest: Manifest | null = null;
 
@@ -241,6 +308,18 @@ export function mountApp(root: HTMLElement) {
     }
   });
 
+  keepAwakeBtn.addEventListener("click", async () => {
+    if (!supportsWakeLock()) return;
+    keepAwake = !keepAwake;
+    window.localStorage.setItem(KEEP_AWAKE_KEY, keepAwake ? "1" : "0");
+    if (!keepAwake) await releaseWakeLock();
+    await acquireWakeLock();
+  });
+
+  document.addEventListener("visibilitychange", () => void acquireWakeLock());
+
   window.addEventListener("hashchange", () => void render());
+  updateKeepAwakeUI();
+  void acquireWakeLock();
   void render();
 }

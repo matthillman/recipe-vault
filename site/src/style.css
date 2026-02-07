@@ -67,6 +67,28 @@ a {
   align-items: center;
 }
 
+.pill {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pill[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.pill.on {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
 .brand {
   font-weight: 650;
   letter-spacing: 0.2px;
@@ -204,4 +226,3 @@ a {
   background: transparent;
   padding: 0;
 }
-

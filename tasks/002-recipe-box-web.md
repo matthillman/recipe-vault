@@ -33,7 +33,8 @@ Create a mobile-first “recipe box” web page that makes it fast to browse and
 2. Add **recently viewed** list (localStorage, bounded).
 3. Add optional **front matter metadata** (`tags`, `source`, `yield`) and display chips in list view.
 4. Add **recipe scaling** helper (e.g., 0.5× / 1× / 2×) with lightweight parsing for common `X g` quantities.
-5. Optional: add offline support (PWA + cache) once the UX feels right.
+5. Add a “**keep screen awake**” toggle while cooking (Wake Lock API, best-effort).
+6. Optional: add offline support (PWA + cache) once the UX feels right.
 
 ## Acceptance Criteria (For “v1”)
 
@@ -46,4 +47,3 @@ Create a mobile-first “recipe box” web page that makes it fast to browse and
 
 - Modified:
   - `site/src/ui/app.ts`
-
