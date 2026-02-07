@@ -67,6 +67,21 @@ a {
   align-items: center;
 }
 
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.brand-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  flex: none;
+}
+
 .pill {
   border: 1px solid var(--border);
   background: var(--panel);

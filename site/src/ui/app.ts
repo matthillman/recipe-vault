@@ -119,7 +119,24 @@ export function mountApp(root: HTMLElement) {
   const shell = el("div", { class: "shell" });
   const topbar = el("div", { class: "topbar" });
   const topbarInner = el("div", { class: "topbar-inner" });
+  const brandWrap = el("div", {
+    class: "brand-wrap",
+    role: "button",
+    tabindex: "0",
+    title: "Home",
+    "aria-label": "Go to recipe list",
+  });
+  const brandLogo = el("img", {
+    class: "brand-logo",
+    alt: "Recipe Box",
+    src: withBase("logo.svg"),
+    width: "28",
+    height: "28",
+    decoding: "async",
+    loading: "eager",
+  }) as HTMLImageElement;
   const brand = el("div", { class: "brand" }, [textNode("Recipe Box")]);
+  brandWrap.append(brandLogo, brand);
   const searchWrap = el("div", { class: "search" });
   const searchInput = el("input", {
     type: "search",
@@ -139,7 +156,7 @@ export function mountApp(root: HTMLElement) {
     "aria-label": "Toggle keep screen awake",
   });
 
-  topbarInner.append(brand, searchWrap, keepAwakeBtn);
+  topbarInner.append(brandWrap, searchWrap, keepAwakeBtn);
   topbar.append(topbarInner);
 
   const content = el("main", { class: "content" });
@@ -306,6 +323,15 @@ export function mountApp(root: HTMLElement) {
       setListRoute("");
       searchInput.blur();
     }
+  });
+
+  const goHome = () => {
+    setListRoute("");
+    searchInput.focus();
+  };
+  brandWrap.addEventListener("click", goHome);
+  brandWrap.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" || ev.key === " ") goHome();
   });
 
   keepAwakeBtn.addEventListener("click", async () => {
