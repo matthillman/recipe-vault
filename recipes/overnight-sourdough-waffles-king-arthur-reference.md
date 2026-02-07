@@ -24,7 +24,7 @@
 
 ---
 
-# Waffle Crisp Mode (Framework)
+# Crisp Mode Tweaks
 
 * Replace 10–15% flour with cornstarch
 * Use oil or clarified butter
