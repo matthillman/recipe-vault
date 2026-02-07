@@ -215,24 +215,31 @@ export function mountApp(root: HTMLElement) {
   };
 
   let manifest: Manifest | null = null;
+  let renderVersion = 0;
 
   const render = async () => {
-    content.replaceChildren();
+    const current = ++renderVersion;
 
-    const route = parseRoute();
+    const routeAtStart = parseRoute();
     if (!manifest) {
-      content.append(el("div", { class: "empty" }, ["Loading recipes…"]));
+      content.replaceChildren(el("div", { class: "empty" }, ["Loading recipes…"]));
       try {
         manifest = await fetchManifest();
       } catch (e) {
+        if (current !== renderVersion) return;
         content.replaceChildren(
           el("div", { class: "empty" }, [
             "Failed to load recipe manifest. Run `npm run sync` and reload.",
           ]),
         );
-        throw e;
+        return;
       }
     }
+
+    if (current !== renderVersion) return;
+
+    const route = manifest ? parseRoute() : routeAtStart;
+    content.replaceChildren();
 
     if (route.kind === "recipe") {
       searchInput.value = "";
