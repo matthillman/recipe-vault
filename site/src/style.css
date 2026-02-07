@@ -1,0 +1,207 @@
+:root {
+  color-scheme: light dark;
+  --bg: #0b0b0c;
+  --panel: #131316;
+  --text: #f3f4f6;
+  --muted: #a7a7ad;
+  --border: #2a2a30;
+  --accent: #79c0ff;
+  --shadow: rgba(0, 0, 0, 0.35);
+  --maxw: 48rem;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #ffffff;
+    --panel: #f6f7f9;
+    --text: #111827;
+    --muted: #4b5563;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --shadow: rgba(0, 0, 0, 0.08);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  background: var(--bg);
+  color: var(--text);
+}
+
+a {
+  color: inherit;
+}
+
+.shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar-inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0.75rem 0.875rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.brand {
+  font-weight: 650;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search input {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  outline: none;
+}
+
+.search input:focus {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.content {
+  flex: 1;
+  max-width: var(--maxw);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0.875rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.card {
+  display: block;
+  text-decoration: none;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.9rem 0.95rem;
+  box-shadow: 0 10px 25px var(--shadow);
+}
+
+.card-title {
+  font-size: 1.02rem;
+  font-weight: 650;
+  margin: 0;
+}
+
+.card-meta {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.empty {
+  color: var(--muted);
+  padding: 1.25rem 0.25rem;
+}
+
+.recipe-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.back {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 0.75rem;
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+}
+
+.back:active {
+  transform: translateY(1px);
+}
+
+.recipe-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.recipe-meta {
+  margin-top: 0.15rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.md {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1rem;
+  line-height: 1.5;
+}
+
+.md h1,
+.md h2,
+.md h3 {
+  margin: 1rem 0 0.5rem;
+}
+
+.md h1:first-child {
+  margin-top: 0;
+}
+
+.md code {
+  background: color-mix(in srgb, var(--panel) 60%, var(--bg));
+  padding: 0.15rem 0.25rem;
+  border-radius: 0.35rem;
+}
+
+.md pre {
+  overflow: auto;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--panel) 65%, var(--bg));
+  border: 1px solid var(--border);
+}
+
+.md pre code {
+  background: transparent;
+  padding: 0;
+}
+

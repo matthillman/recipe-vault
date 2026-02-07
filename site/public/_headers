@@ -1,0 +1,6 @@
+/recipes/manifest.json
+  Cache-Control: no-store
+
+/recipes/*.md
+  Cache-Control: max-age=3600
+

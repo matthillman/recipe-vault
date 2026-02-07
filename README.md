@@ -43,3 +43,10 @@ Notes:
 
 - This environment may require `GOCACHE=/tmp/gocache` (the default Go build cache path can be unwritable).
 - The generator prefers an explicit `## Card` section in a recipe file if you want a hand-authored “perfect” card.
+
+## Recipe Box Web UI
+
+There is a small mobile-first web UI under `site/` for quickly browsing the Markdown recipes.
+
+- Local dev: see `site/README.md`
+- Hosting target: Cloudflare Pages (static Vite build)

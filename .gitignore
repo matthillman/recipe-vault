@@ -1,2 +1,7 @@
 out/
 /recipecards
+
+# Web recipe box
+site/node_modules/
+site/dist/
+site/public/recipes/

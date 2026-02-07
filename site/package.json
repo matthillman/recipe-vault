@@ -1,0 +1,22 @@
+{
+  "name": "recipe-box",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "sync": "node ./scripts/sync-recipes.mjs",
+    "dev": "npm run sync && vite",
+    "build": "npm run sync && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "dompurify": "^3.0.9",
+    "marked": "^12.0.2"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.6",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.12"
+  }
+}
+
