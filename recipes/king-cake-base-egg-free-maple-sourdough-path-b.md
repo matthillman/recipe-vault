@@ -1,4 +1,4 @@
-# King Cake Base — Egg-Free Maple Sourdough (Path B)
+# King Cake Base — Egg-Free Maple Sourdough
 
 **Yield / Target**
 
