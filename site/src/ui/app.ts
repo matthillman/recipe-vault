@@ -358,6 +358,9 @@ export function mountApp(root: HTMLElement) {
     const route = manifest ? parseRoute() : routeAtStart;
     content.replaceChildren();
 
+    controls.classList.toggle("hidden", route.kind === "recipe");
+    if (route.kind === "recipe") sortDetails.open = false;
+
     if (route.kind === "recipe") {
       searchInput.value = "";
       const meta = manifest.recipes.find((r) => r.slug === route.slug) ?? null;

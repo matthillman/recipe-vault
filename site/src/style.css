@@ -157,6 +157,10 @@ a {
   align-items: center;
 }
 
+.controls.hidden {
+  display: none;
+}
+
 .controls .search {
   flex: 1;
 }
