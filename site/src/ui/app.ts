@@ -14,6 +14,8 @@ type Manifest = {
   recipes: RecipeMeta[];
 };
 
+type SortMode = "updated_desc" | "title_asc" | "title_desc";
+
 type Route =
   | { kind: "list"; q: string }
   | { kind: "recipe"; slug: string };
@@ -108,9 +110,15 @@ function textNode(text: string) {
 }
 
 const KEEP_AWAKE_KEY = "recipeBox.keepAwake";
+const SORT_MODE_KEY = "recipeBox.sortMode";
 
 function supportsWakeLock() {
   return Boolean((navigator as unknown as { wakeLock?: unknown }).wakeLock);
+}
+
+function parseSortMode(raw: string | null): SortMode {
+  if (raw === "title_asc" || raw === "title_desc" || raw === "updated_desc") return raw;
+  return "updated_desc";
 }
 
 export function mountApp(root: HTMLElement) {
@@ -119,24 +127,31 @@ export function mountApp(root: HTMLElement) {
   const shell = el("div", { class: "shell" });
   const topbar = el("div", { class: "topbar" });
   const topbarInner = el("div", { class: "topbar-inner" });
-  const brandWrap = el("div", {
-    class: "brand-wrap",
-    role: "button",
-    tabindex: "0",
+  const topbarHeader = el("div", { class: "topbar-header" });
+  const topbarLeft = el("div", { class: "topbar-left" });
+  const topbarCenter = el("div", { class: "topbar-center" });
+  const topbarRight = el("div", { class: "topbar-right" });
+
+  const logoBtn = el("button", {
+    class: "logo-btn",
+    type: "button",
     title: "Home",
     "aria-label": "Go to recipe list",
   });
-  const brandLogo = el("img", {
-    class: "brand-logo",
+  const logoImg = el("img", {
+    class: "logo",
     alt: "Recipe Box",
     src: withBase("logo.svg"),
-    width: "28",
-    height: "28",
+    width: "30",
+    height: "30",
     decoding: "async",
     loading: "eager",
   }) as HTMLImageElement;
+  logoBtn.append(logoImg);
+
   const brand = el("div", { class: "brand" }, [textNode("Recipe Box")]);
-  brandWrap.append(brandLogo, brand);
+
+  const controls = el("div", { class: "controls" });
   const searchWrap = el("div", { class: "search" });
   const searchInput = el("input", {
     type: "search",
@@ -156,7 +171,21 @@ export function mountApp(root: HTMLElement) {
     "aria-label": "Toggle keep screen awake",
   });
 
-  topbarInner.append(brandWrap, searchWrap, keepAwakeBtn);
+  const sortDetails = el("details") as HTMLDetailsElement;
+  const sortSummary = el("summary", { class: "pill", role: "button" }, ["Sort"]);
+  const sortMenu = el("div", { class: "sort-menu", role: "menu" });
+  sortDetails.append(sortSummary, sortMenu);
+  const sortWrap = el("div", { class: "sort" });
+  sortWrap.append(sortDetails);
+
+  controls.append(searchWrap, sortWrap);
+
+  topbarLeft.append(logoBtn);
+  topbarCenter.append(brand);
+  topbarRight.append(keepAwakeBtn);
+  topbarHeader.append(topbarLeft, topbarCenter, topbarRight);
+
+  topbarInner.append(topbarHeader, controls);
   topbar.append(topbarInner);
 
   const content = el("main", { class: "content" });
@@ -165,6 +194,7 @@ export function mountApp(root: HTMLElement) {
 
   let wakeLockSentinel: unknown | null = null;
   let keepAwake = window.localStorage.getItem(KEEP_AWAKE_KEY) === "1";
+  let sortMode: SortMode = parseSortMode(window.localStorage.getItem(SORT_MODE_KEY));
 
   const updateKeepAwakeUI = () => {
     const on = keepAwake && Boolean(wakeLockSentinel);
@@ -172,6 +202,52 @@ export function mountApp(root: HTMLElement) {
     keepAwakeBtn.classList.toggle("on", on);
     keepAwakeBtn.toggleAttribute("disabled", !supportsWakeLock());
   };
+
+  const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+  const sortModeLabel = (mode: SortMode) => {
+    if (mode === "updated_desc") return "Updated";
+    if (mode === "title_asc") return "Title A→Z";
+    return "Title Z→A";
+  };
+
+  const updateSortUI = () => {
+    sortSummary.textContent = `Sort: ${sortModeLabel(sortMode)}`;
+    for (const btn of sortMenu.querySelectorAll<HTMLButtonElement>("button[data-sort]")) {
+      btn.setAttribute("aria-checked", btn.dataset.sort === sortMode ? "true" : "false");
+    }
+  };
+
+  const setSortMode = (mode: SortMode) => {
+    sortMode = mode;
+    window.localStorage.setItem(SORT_MODE_KEY, mode);
+    updateSortUI();
+    sortDetails.open = false;
+    void render();
+  };
+
+  const addSortItem = (mode: SortMode) => {
+    const btn = el("button", {
+      class: "sort-item",
+      type: "button",
+      role: "menuitemradio",
+      "aria-checked": mode === sortMode ? "true" : "false",
+      "data-sort": mode,
+    });
+    btn.append(textNode(sortModeLabel(mode)));
+    btn.addEventListener("click", () => setSortMode(mode));
+    sortMenu.append(btn);
+  };
+
+  addSortItem("updated_desc");
+  addSortItem("title_asc");
+  addSortItem("title_desc");
+
+  document.addEventListener("click", (ev) => {
+    if (!sortDetails.open) return;
+    const target = ev.target as Node | null;
+    if (!target) return;
+    if (!sortDetails.contains(target)) sortDetails.open = false;
+  });
 
   const releaseWakeLock = async () => {
     const sentinel = wakeLockSentinel as { release?: () => Promise<void> } | null;
@@ -290,10 +366,18 @@ export function mountApp(root: HTMLElement) {
     searchInput.value = q;
 
     const normalized = q.trim().toLowerCase();
-    const recipes = manifest.recipes
+    const filtered = manifest.recipes
       .slice()
-      .sort((a, b) => b.updatedMs - a.updatedMs)
       .filter((r) => (!normalized ? true : r.title.toLowerCase().includes(normalized)));
+
+    const recipes = filtered.slice();
+    if (sortMode === "updated_desc") {
+      recipes.sort((a, b) => b.updatedMs - a.updatedMs);
+    } else if (sortMode === "title_asc") {
+      recipes.sort((a, b) => collator.compare(a.title, b.title));
+    } else {
+      recipes.sort((a, b) => collator.compare(b.title, a.title));
+    }
 
     if (!recipes.length) {
       content.append(el("div", { class: "empty" }, ["No matches."]));
@@ -336,10 +420,7 @@ export function mountApp(root: HTMLElement) {
     setListRoute("");
     searchInput.focus();
   };
-  brandWrap.addEventListener("click", goHome);
-  brandWrap.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter" || ev.key === " ") goHome();
-  });
+  logoBtn.addEventListener("click", goHome);
 
   keepAwakeBtn.addEventListener("click", async () => {
     if (!supportsWakeLock()) return;
@@ -353,6 +434,7 @@ export function mountApp(root: HTMLElement) {
 
   window.addEventListener("hashchange", () => void render());
   updateKeepAwakeUI();
+  updateSortUI();
   void acquireWakeLock();
   void render();
 }
