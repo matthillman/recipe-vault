@@ -8,7 +8,7 @@
 ## Ingredients
 
 * Warm water (95–105°F): 355 g
-* Sugar: 1 Tbsp
+* Sugar: 13 g
 * Kosher salt: 6 g
 * Instant yeast: 5.25 g
 * All-purpose flour: 630 g
@@ -16,13 +16,13 @@
 
 **Boiling Bath**
 
-* Water: 10 cups
+* Water: 2,360 g
 * Baking soda: 190 g
 
 **Egg Wash**
 
 * Egg yolk: 17 g
-* Water: 1 Tbsp
+* Water: 15 g
 
 ## Process
 

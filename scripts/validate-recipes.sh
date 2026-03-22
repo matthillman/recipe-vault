@@ -62,6 +62,7 @@ for file in recipes/*.md; do
         ingredients_seen = 0
         ingredients_bullets = 0
         ingredients_unstructured = 0
+        ingredients_without_amount = 0
         process_seen = 0
         process_steps = 0
         formula_seen = 0
@@ -121,6 +122,13 @@ for file in recipes/*.md; do
         line = $0
         sub(/^[-*] /, "", line)
         if (line !~ /:/) ingredients_unstructured++
+        amount = line
+        if (line ~ /:/) {
+          sub(/^[^:]+:[[:space:]]*/, "", amount)
+        } else {
+          amount = ""
+        }
+        if (amount == "" || amount !~ /[0-9]/) ingredients_without_amount++
         next
       }
       section == "process" && $0 ~ /^[0-9]+\. / {
@@ -137,6 +145,7 @@ for file in recipes/*.md; do
         printf "ingredients_seen=%d\n", ingredients_seen
         printf "ingredients_bullets=%d\n", ingredients_bullets
         printf "ingredients_unstructured=%d\n", ingredients_unstructured
+        printf "ingredients_without_amount=%d\n", ingredients_without_amount
         printf "process_seen=%d\n", process_seen
         printf "process_steps=%d\n", process_steps
         printf "formula_seen=%d\n", formula_seen
@@ -176,6 +185,10 @@ for file in recipes/*.md; do
 
   if [ "${ingredients_unstructured:-0}" -gt 0 ]; then
     warn "$file: ${ingredients_unstructured} ingredient item(s) do not use \"name: amount\" format"
+  fi
+
+  if [ "${ingredients_without_amount:-0}" -gt 0 ]; then
+    fail "$file: ${ingredients_without_amount} ingredient item(s) do not include a concrete amount"
   fi
 done
 

@@ -10,7 +10,7 @@
 * Unsalted butter, soft: 113 g
 * Brown sugar: 120 g
 * Ground cinnamon: 8 g
-* Fine salt: pinch
+* Fine salt: 1 g
 
 ## Process
 

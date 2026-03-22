@@ -16,10 +16,10 @@
 
 **Morning Additions**
 
-* Eggs: 2
+* Eggs: 100 g (about 2 large)
 * Neutral oil or melted butter: 50-57 g
-* Baking soda: 1 tsp
-* Salt: ¾ tsp
+* Baking soda: 5 g
+* Fine salt: 4 g
 
 ## Process
 

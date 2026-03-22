@@ -24,7 +24,7 @@
 * Sugar: 9 g
 * Salt: 6 g
 * Soft butter: 30 g
-* Old-fashioned oats (for coating): ~½ cup
+* Old-fashioned oats (for coating): 40 g
 
 ## Process
 

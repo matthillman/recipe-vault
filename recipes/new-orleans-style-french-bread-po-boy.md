@@ -5,13 +5,21 @@
 * 2 long loaves (~14–16" each)
 * Baked on sheet pan
 
-## Ingredients (Baker’s %)
+## Formula (Baker’s %)
 
 * Bleached AP flour: 100%
 * Water: ~60%
 * Instant yeast: ~1%
 * Salt: ~2%
 * Oil or shortening: ~3–4%
+
+## Ingredients
+
+* Bleached all-purpose flour: 500 g
+* Water: 300 g
+* Instant yeast: 5 g
+* Fine salt: 10 g
+* Oil or shortening: 18 g
 
 ## Process
 

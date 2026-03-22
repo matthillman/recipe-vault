@@ -8,10 +8,9 @@
 ## Ingredients (5 × 170 g loaves)
 
 * Total flour: 514 g
-
-  * 70% Bread flour
-  * 20% AP flour
-  * 10% Whole wheat flour
+* Bread flour: 360 g (70%)
+* All-purpose flour: 103 g (20%)
+* Whole wheat flour: 51 g (10%)
 * Water: 377 g (73.5%)
 * Salt: 10.3 g (2%)
 * Sourdough starter (100% hydration): 52 g (10%)
