@@ -6,6 +6,7 @@
 
 ## Ingredients
 
+- Ingredient name: amount
 - (List ingredients with grams; include baker’s % when relevant)
 
 ## Process
@@ -19,3 +20,6 @@
 - Common failure modes + fixes
 - Storage / reheating (optional)
 
+## Formula (Optional)
+
+- Baker’s % or ratio summary if the recipe benefits from it

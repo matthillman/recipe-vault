@@ -1,8 +1,8 @@
 # Refactors / Cleanup Ideas
 
-Use this list to park “we should improve this later” ideas discovered during recipe work.
+This file is intentionally no longer used.
 
-## Queue
+## Current Rule
 
-- [ ] (Add items here)
-
+- Put refactors and cleanup ideas in `project/ROADMAP.md`.
+- Create a numbered task in `tasks/` only when the work needs a multi-step execution plan.

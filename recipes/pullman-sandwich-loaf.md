@@ -5,7 +5,7 @@
 * USA Pan 9×4×4 Pullman (lid on)
 * Finished dough weight: ~840 g
 
-### Ingredients (USA Pan 9×4×4)
+## Ingredients (USA Pan 9×4×4)
 
 * Bread flour: 460 g
 * Whole milk: 276 g
@@ -15,7 +15,7 @@
 * Salt: 9 g
 * Sourdough starter (100% hydration): 69 g
 
-### Process
+## Process
 
 1. Optional autolyse 20–30 minutes.
 2. Mix all ingredients until moderately developed.

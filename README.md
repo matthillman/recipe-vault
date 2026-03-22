@@ -1,52 +1,86 @@
 # Cooking Lab Notes
 
-This repository is a lightweight cookbook + cooking knowledge base designed for **human/agent coworking**. The goal is simple: if we learn something, we write it down here so a future thread can pick up with **zero prior context**.
+This repository is a small content mono-repo:
 
-## Where Things Live
+- `recipes/` and `notes/` are the source-of-truth knowledge base
+- `cmd/` and `internal/` contain small Go tools built on top of that content
+- `site/` is a Vite app for browsing the recipes on the web
 
-- Recipes (one per file): `recipes/`
-- Canonical rollup (optional, curated): `recipe-list.md`
-- Knowledge base (our learnings): `notes/`
-- Modernist + science cooking notes: `notes/modernist/`, `notes/science/`
-- Beverage + cocktail work: `notes/beverages/`
-- Project workflow + backlog: `project/`
-- Larger work items (numbered plans): `tasks/`
-- Reusable starting points: `templates/`
-- External/reference material: `reference/`
+The operating principle is simple: if we learn something, we write it down in a durable file so a future human or agent can resume work with minimal context.
 
-## Quick Start (Humans + Agents)
+## Repository Layout
 
-1. Pick the artifact you’re creating:
-   - A recipe: add a file in `recipes/`
-   - A new technique/ingredient/equipment note: add a file under `notes/`
-   - A bigger initiative (re-org, standardization, audits): create a `tasks/NNN-*.md` plan
-2. Record what we learned (even if the recipe itself is unchanged): add/append to `notes/`.
-3. Keep the repo navigable: update `recipe-list.md` only when you intend to change the canonical rollup.
+- `recipes/`: production-ready recipes and recipe components
+- `recipe-list.md`: curated rollup; update only intentionally
+- `notes/`: distilled learnings, experiments, formulas, techniques, ingredients, equipment
+- `reference/`: raw external material and supporting documents
+- `templates/`: starting points for recipes, notes, experiments, and protocols
+- `project/`: workflow rules and the single backlog entry point
+- `tasks/`: numbered multi-step execution plans
+- `cmd/`, `internal/`: Go tooling for recipe cards and parsing
+- `site/`: static recipe browser
+- `scripts/`: lightweight repo checks and maintenance helpers
 
-See `project/WORKFLOW.md` for the full collaboration rules.
-
-## Recipe Card PDFs
-
-There is a small Go CLI that can generate printable 2.5"x4" portrait recipe cards (8-up on US Letter landscape):
+## Common Commands
 
 ```bash
-# List recipe slugs
-env GOCACHE=/tmp/gocache go run ./cmd/recipecards list
+# Validate recipe structure
+make validate-recipes
+
+# Validate recipes and run Go tests when Go is available
+make check
+
+# List recipe slugs for the card generator
+make cards-list
 
 # Build a PDF for selected recipes
-env GOCACHE=/tmp/gocache go run ./cmd/recipecards build \
-  --out out/cards.pdf \
-  --recipes standard-sourdough-loaf,overnight-sourdough-focaccia
+make cards-build RECIPES=standard-sourdough-loaf,overnight-sourdough-focaccia
+
+# Run the web UI locally
+make site-dev
 ```
 
 Notes:
 
-- This environment may require `GOCACHE=/tmp/gocache` (the default Go build cache path can be unwritable).
-- The generator prefers an explicit `## Card` section in a recipe file if you want a hand-authored “perfect” card.
+- `make check` skips Go tests if `go` is not installed.
+- The site sync step copies `recipes/*.md` into `site/public/recipes/`; those generated files are not source-of-truth.
+- The card generator may require `GOCACHE=/tmp/gocache`; the `Makefile` handles that.
 
-## Recipe Box Web UI
+## Recipe Schema
 
-There is a small mobile-first web UI under `site/` for quickly browsing the Markdown recipes.
+The validator treats the following layout as canonical:
 
-- Local dev: see `site/README.md`
-- Hosting target: Cloudflare Pages (static Vite build)
+- One `# Title`
+- One `**Yield / Target**` or `**Yield / Pan Target**` block followed by bullet lines
+- One `## Ingredients` section with bullet items
+- One `## Process` section with numbered steps
+- Optional sections such as `## Formula`, `## Notes`, and `## Card`
+
+Preferred conventions:
+
+- Ingredient bullets use `name: amount`
+- Quantities are metric-first when practical
+- `## Ingredients` appears before `## Process`
+- `## Notes` captures variations, failure modes, storage, or decisions worth retaining
+
+## Workflow
+
+1. Add or update the right artifact:
+   - recipe in `recipes/`
+   - note in `notes/`
+   - multi-step initiative in `tasks/` after adding it to `project/ROADMAP.md`
+2. Record the decision or learning in a durable file, not just chat.
+3. Run `make validate-recipes` for recipe changes and `make check` when touching tooling.
+4. Track larger work in `project/ROADMAP.md`.
+
+Start with [project/WORKFLOW.md](/Users/matt/Code/recipe-vault/project/WORKFLOW.md) for collaboration rules and [project/ROADMAP.md](/Users/matt/Code/recipe-vault/project/ROADMAP.md) for the active queue.
+
+## Tooling Surfaces
+
+### Recipe Card PDFs
+
+The Go CLI under [cmd/recipecards/main.go](/Users/matt/Code/recipe-vault/cmd/recipecards/main.go) generates printable 2.5"x4" portrait recipe cards laid out 8-up on US Letter landscape. It prefers an explicit `## Card` section when a recipe needs a hand-authored card layout.
+
+### Recipe Box Web UI
+
+The mobile-first web UI under [site/](/Users/matt/Code/recipe-vault/site) browses the Markdown recipes directly from generated copies under `site/public/recipes/`. It is deployed on Cloudflare Pages from `matthillman/recipe-vault` with root directory `site`, build command `npm run build`, output directory `dist`, and automatic production deploys from `main`. See [site/README.md](/Users/matt/Code/recipe-vault/site/README.md) for the full deployment configuration.

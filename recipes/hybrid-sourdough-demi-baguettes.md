@@ -5,7 +5,7 @@
 * 5 demi-baguettes, ~170 g each
 * Baked directly on stone or steel
 
-### Ingredients (5 × 170 g loaves)
+## Ingredients (5 × 170 g loaves)
 
 * Total flour: 514 g
 
@@ -17,7 +17,7 @@
 * Sourdough starter (100% hydration): 52 g (10%)
 * Instant yeast: 0.6 g (0.12%)
 
-### Process
+## Process
 
 1. Autolyse flour + most water 30–45 minutes.
 2. Mix in starter, yeast, salt, remaining water.

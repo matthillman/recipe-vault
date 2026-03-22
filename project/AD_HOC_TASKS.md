@@ -1,8 +1,8 @@
 # Ad Hoc Tasks
 
-Small tasks that are not worth a numbered plan yet, but are worth remembering.
+This file is intentionally no longer used.
 
-## Queue
+## Current Rule
 
-- [ ] (Add items here)
-
+- Put small follow-ups in `project/ROADMAP.md`.
+- If the item grows beyond a quick change, create `tasks/NNN-*.md` and link it from the roadmap.

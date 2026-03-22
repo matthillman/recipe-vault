@@ -5,7 +5,7 @@
 * Fits one standard 9×13" pan or equivalent sheet pan
 * Finished dough weight: ~1,040 g
 
-### Ingredients
+## Ingredients
 
 * Bread flour: 450 g (90%)
 * Whole wheat flour: 50 g (10%)
@@ -14,7 +14,7 @@
 * Salt: 10 g (2%)
 * Olive oil: 20 g (4%)
 
-### Process
+## Process
 
 1. Autolyse flour and water 30–45 minutes.
 2. Mix in starter. Add olive oil and salt; mix until cohesive.

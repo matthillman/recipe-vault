@@ -5,7 +5,7 @@
 * One standard Pullman or 9×5" loaf pan
 * Finished dough weight: ~835 g
 
-### Ingredients
+## Ingredients
 
 **Levain**
 
@@ -26,7 +26,7 @@
 * Soft butter: 30 g
 * Old-fashioned oats (for coating): ~½ cup
 
-### Process
+## Process
 
 1. Build levain and ferment overnight.
 2. Mix all dough ingredients except butter until cohesive; add butter and knead smooth.

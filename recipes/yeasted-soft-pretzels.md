@@ -5,7 +5,7 @@
 * 8 large soft pretzels
 * Standard sheet pan lined with parchment
 
-### Ingredients
+## Ingredients
 
 * Warm water (95–105°F): 355 g
 * Sugar: 1 Tbsp
@@ -24,7 +24,7 @@
 * Egg yolk: 17 g
 * Water: 1 Tbsp
 
-### Process
+## Process
 
 1. Mix and knead 4–5 minutes.
 2. Bulk ferment 45–55 minutes until doubled.

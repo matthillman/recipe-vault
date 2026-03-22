@@ -1,6 +1,11 @@
 # Overnight Sourdough Waffles (King Arthur Reference)
 
-### Ingredients
+**Yield / Target**
+
+* About 1.1 kg batter
+* About 8 standard waffles, depending on iron size
+
+## Ingredients
 
 **Overnight Sponge**
 
@@ -12,11 +17,11 @@
 **Morning Additions**
 
 * Eggs: 2
-* Oil 50 g **or** butter 57 g
+* Neutral oil or melted butter: 50-57 g
 * Baking soda: 1 tsp
 * Salt: ¾ tsp
 
-### Process
+## Process
 
 1. Mix sponge; rest ~12 hours at cool room temp.
 2. Whisk in remaining ingredients.
@@ -24,7 +29,7 @@
 
 ---
 
-# Crisp Mode Tweaks
+## Crisp Mode Tweaks
 
 * Replace 10–15% flour with cornstarch
 * Use oil or clarified butter

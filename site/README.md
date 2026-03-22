@@ -17,16 +17,23 @@ Notes:
 
 ## Deploy (Cloudflare Pages)
 
-This is set up as a static Vite build, which fits Cloudflare Pages’ free tier well.
+This is deployed on Cloudflare Pages from the GitHub repo `matthillman/recipe-vault`.
 
-Cloudflare Pages settings:
+Current Cloudflare Pages configuration:
 
+- **Git repository:** `matthillman/recipe-vault`
 - **Root directory:** `site`
 - **Build command:** `npm run build`
 - **Build output directory:** `dist`
+- **Production branch:** `main`
+- **Automatic deployments:** Enabled
+- **Build comments:** Enabled
+- **Build cache:** Disabled
+- **Build watch paths:** `*`
+- **Build system version:** Version 3
+- **Deploy hooks:** None defined
 
 Workflow:
 
-- Connect the repo to Cloudflare Pages (Git integration).
-- Pushes to your default branch trigger automatic builds + deploys.
-
+- Pushes to `main` trigger production deploys automatically.
+- The build runs from `site/`, so changes to the web UI or Markdown content can both affect the deployed site.

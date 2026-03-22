@@ -1,5 +1,7 @@
 # Task 000: Sample Task Plan
 
+Link this task from `project/ROADMAP.md` before work starts.
+
 ## Progress Summary
 
 **Status**: Not Started
@@ -38,4 +40,3 @@ List steps with enough detail that a new agent can execute without guessing.
 ## Summary of Changes (Fill In When Done)
 
 - (Short bullet list)
-
