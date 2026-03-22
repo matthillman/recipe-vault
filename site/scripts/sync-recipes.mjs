@@ -64,6 +64,26 @@ function buildSearchText({ slug, title, yieldLines, sectionHeadings, md }) {
     .trim();
 }
 
+function deriveTags({ slug, title, sectionHeadings, yieldLines, md }) {
+  const haystack = [slug, title, ...sectionHeadings, ...yieldLines, md].join("\n").toLowerCase();
+  const tags = [];
+
+  const maybeAdd = (tag, pattern) => {
+    if (pattern.test(haystack) && !tags.includes(tag)) tags.push(tag);
+  };
+
+  maybeAdd("bread", /\b(bread|loaf|focaccia|baguette|pretzel|pullman|po.?boy)\b/);
+  maybeAdd("sourdough", /\b(sourdough|starter|levain|discard)\b/);
+  maybeAdd("breakfast", /\b(waffle|breakfast)\b/);
+  maybeAdd("filling", /\b(filling|frangipane)\b/);
+  maybeAdd("glaze", /\b(glaze|icing|syrup)\b/);
+  maybeAdd("king cake", /\bking cake\b/);
+  maybeAdd("enriched", /\b(enriched|egg dough|butter|cream cheese)\b/);
+  maybeAdd("pan", /\b(pan|pullman|sheet pan|9×13|9x13)\b/);
+
+  return tags;
+}
+
 async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
@@ -95,12 +115,14 @@ async function main() {
     const title = titleFromMarkdown(md) ?? titleizeSlug(slug);
     const yieldLines = extractYieldLines(md);
     const sectionHeadings = extractSectionHeadings(md);
+    const tags = deriveTags({ slug, title, sectionHeadings, yieldLines, md });
 
     await fs.writeFile(outPath, md);
 
     recipes.push({
       slug,
       title,
+      tags,
       yieldLines,
       sectionHeadings,
       searchText: buildSearchText({ slug, title, yieldLines, sectionHeadings, md }),

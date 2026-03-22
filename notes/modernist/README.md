@@ -13,3 +13,12 @@ This folder is for modernist ingredients and techniques (hydrocolloids, emulsion
 - Always record **brand/grade** (e.g., methylcellulose type, gelatin bloom) and **process** (shear, heat, rest).
 - Prefer percentages by weight (e.g., `0.25% xanthan`) and specify base (total liquid vs total batch).
 
+## Current State
+
+- No dedicated modernist notes yet.
+
+## Good Candidates
+
+- Hydrocolloid cheat sheets with % ranges
+- Emulsion stabilization notes
+- Gel, foam, and texture-setting references

@@ -4,6 +4,7 @@ import { marked } from "marked";
 type RecipeMeta = {
   slug: string;
   title: string;
+  tags: string[];
   yieldLines: string[];
   sectionHeadings: string[];
   searchText: string;
@@ -20,10 +21,16 @@ type Manifest = {
 type SortMode = "updated_desc" | "title_asc" | "title_desc";
 
 type Route =
-  | { kind: "list"; q: string }
+  | { kind: "list"; q: string; tag: string }
   | { kind: "recipe"; slug: string };
 
 type RouteMode = "push" | "replace";
+
+type RecipeSection = {
+  heading: string;
+  body: string;
+  kind: "ingredients" | "process" | "formula" | "notes" | "other";
+};
 
 function parseRoute(): Route {
   const raw = window.location.hash.replace(/^#\/?/, "");
@@ -37,12 +44,13 @@ function parseRoute(): Route {
     return { kind: "recipe", slug };
   }
 
-  return { kind: "list", q: params.get("q") ?? "" };
+  return { kind: "list", q: params.get("q") ?? "", tag: params.get("tag") ?? "" };
 }
 
-function setListRoute(q: string) {
+function setListRoute({ q, tag }: { q: string; tag?: string }) {
   const params = new URLSearchParams();
   if (q.trim()) params.set("q", q.trim());
+  if (tag?.trim()) params.set("tag", tag.trim());
   const suffix = params.toString() ? `?${params.toString()}` : "";
   return `#/list${suffix}`;
 }
@@ -183,6 +191,82 @@ function wakeIcon() {
   );
 }
 
+function slugifyHeading(label: string) {
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function sectionKind(heading: string): RecipeSection["kind"] {
+  const lower = heading.toLowerCase();
+  if (lower.startsWith("ingredients")) return "ingredients";
+  if (lower.startsWith("process")) return "process";
+  if (lower.startsWith("formula")) return "formula";
+  if (lower.startsWith("notes")) return "notes";
+  return "other";
+}
+
+function parseRecipeMarkdown(md: string): { title: string | null; yieldLines: string[]; sections: RecipeSection[] } {
+  const lines = md.split(/\r?\n/);
+  const sections: RecipeSection[] = [];
+  let title: string | null = null;
+  let yieldLines: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!title) {
+      const match = /^#\s+(.+?)\s*$/.exec(line);
+      if (match) {
+        title = match[1];
+        i += 1;
+        continue;
+      }
+    }
+
+    if (/^\*\*Yield \/ (Target|Pan Target)\*\*$/.test(line.trim())) {
+      const out: string[] = [];
+      i += 1;
+      while (i < lines.length) {
+        const trimmed = lines[i].trim();
+        if (!trimmed) {
+          if (out.length) break;
+          i += 1;
+          continue;
+        }
+        const bullet = /^[-*]\s+(.+)$/.exec(trimmed);
+        if (!bullet) break;
+        out.push(bullet[1].trim());
+        i += 1;
+      }
+      yieldLines = out;
+      continue;
+    }
+
+    const sectionMatch = /^##\s+(.+?)\s*$/.exec(line);
+    if (sectionMatch) {
+      const heading = sectionMatch[1].trim();
+      i += 1;
+      const body: string[] = [];
+      while (i < lines.length && !/^##\s+/.test(lines[i])) {
+        body.push(lines[i]);
+        i += 1;
+      }
+      sections.push({
+        heading,
+        body: body.join("\n").trim(),
+        kind: sectionKind(heading),
+      });
+      continue;
+    }
+
+    i += 1;
+  }
+
+  return { title, yieldLines, sections };
+}
+
 export function mountApp(root: HTMLElement) {
   root.replaceChildren();
 
@@ -261,7 +345,7 @@ export function mountApp(root: HTMLElement) {
   let wakeLockSentinel: unknown | null = null;
   let keepAwake = window.localStorage.getItem(KEEP_AWAKE_KEY) === "1";
   let sortMode: SortMode = parseSortMode(window.localStorage.getItem(SORT_MODE_KEY));
-  let lastListRoute = setListRoute("");
+  let lastListRoute = setListRoute({ q: "", tag: "" });
 
   const updateRoute = (hash: string, mode: RouteMode) => {
     const url = new URL(window.location.href);
@@ -426,29 +510,91 @@ export function mountApp(root: HTMLElement) {
 
       content.append(header);
 
+      const detailShell = el("div", { class: "recipe-detail" });
+      content.append(detailShell);
+
+      const detailTop = el("div", { class: "recipe-detail-top" });
+      detailShell.append(detailTop);
+
       if (meta?.yieldLines?.length) {
         const summary = el("div", { class: "recipe-summary" });
         for (const line of meta.yieldLines) {
           summary.append(el("div", { class: "recipe-chip" }, [textNode(line)]));
         }
-        content.append(summary);
+        detailTop.append(summary);
       }
 
-      const mdWrap = el("article", { class: "md" });
-      mdWrap.append(el("div", { class: "empty" }, ["Loading…"]));
-      content.append(mdWrap);
+      if (meta?.tags?.length) {
+        const tags = el("div", { class: "recipe-tags" });
+        for (const tag of meta.tags) {
+          tags.append(el("div", { class: "card-chip" }, [textNode(tag)]));
+        }
+        detailTop.append(tags);
+      }
+
+      const nav = el("nav", { class: "recipe-nav", "aria-label": "Recipe sections" });
+      detailShell.append(nav);
+
+      const layout = el("div", { class: "recipe-layout" });
+      const aside = el("aside", { class: "recipe-aside" });
+      const main = el("article", { class: "recipe-main" });
+      layout.append(aside, main);
+      detailShell.append(layout);
+
+      const loading = el("div", { class: "empty" }, ["Loading…"]);
+      main.append(loading);
 
       try {
         const md = await fetchRecipeMarkdown(route.slug);
-        const html = renderMarkdown(md);
-        mdWrap.innerHTML = html;
+        const parsed = parseRecipeMarkdown(md);
+        const derivedTitle = parsed.title ?? titleFromMarkdown(md);
+        if (derivedTitle && derivedTitle !== title.textContent) title.textContent = derivedTitle;
 
-        const derivedTitle = titleFromMarkdown(md);
-        if (derivedTitle && derivedTitle !== title.textContent) {
-          title.textContent = derivedTitle;
+        if (!meta?.yieldLines?.length && parsed.yieldLines.length) {
+          detailTop.prepend(
+            el(
+              "div",
+              { class: "recipe-summary" },
+              parsed.yieldLines.map((line) => el("div", { class: "recipe-chip" }, [textNode(line)])),
+            ),
+          );
+        }
+
+        aside.replaceChildren();
+        main.replaceChildren();
+        nav.replaceChildren();
+
+        const sections = parsed.sections.filter((section) => section.body);
+        const primary = sections.filter((section) => section.kind === "ingredients" || section.kind === "formula");
+        const secondary = sections.filter((section) => section.kind !== "ingredients" && section.kind !== "formula");
+        const orderedSections = primary.length ? [...primary, ...secondary] : sections;
+
+        for (const section of orderedSections) {
+          const id = `section-${slugifyHeading(section.heading)}`;
+          nav.append(
+            el("a", { class: "recipe-nav-link", href: `#${id}` }, [textNode(section.heading)]),
+          );
+
+          const wrap = el("section", { class: "recipe-section", id });
+          const heading = el("h2", { class: "recipe-section-title" }, [textNode(section.heading)]);
+          const body = el("div", { class: "md recipe-section-body" });
+          body.innerHTML = renderMarkdown(section.body);
+          wrap.append(heading, body);
+
+          if (section.kind === "ingredients" || section.kind === "formula") {
+            aside.append(wrap);
+          } else {
+            main.append(wrap);
+          }
+        }
+
+        if (!sections.length) {
+          const mdWrap = el("article", { class: "md" });
+          mdWrap.innerHTML = renderMarkdown(md);
+          main.append(mdWrap);
         }
       } catch {
-        mdWrap.replaceChildren(
+        main.replaceChildren(
           el("div", { class: "empty" }, [
             "Recipe not found (did you run `npm run sync`?).",
           ]),
@@ -459,13 +605,15 @@ export function mountApp(root: HTMLElement) {
     }
 
     const q = route.q;
-    lastListRoute = setListRoute(q);
+    const activeTag = route.tag;
+    lastListRoute = setListRoute({ q, tag: activeTag });
     searchInput.value = q;
 
     const normalized = q.trim().toLowerCase();
     const filtered = manifest.recipes
       .slice()
-      .filter((r) => (!normalized ? true : r.searchText.includes(normalized)));
+      .filter((r) => (!normalized ? true : r.searchText.includes(normalized)))
+      .filter((r) => (!activeTag ? true : r.tags.includes(activeTag)));
 
     const recipes = filtered.slice();
     if (sortMode === "updated_desc") {
@@ -477,8 +625,68 @@ export function mountApp(root: HTMLElement) {
     }
 
     if (!recipes.length) {
+      const availableTags = Array.from(new Set(manifest.recipes.flatMap((r) => r.tags))).sort();
+      if (availableTags.length) {
+        const filters = el("div", { class: "filter-bar" });
+        const allChip = el(
+          "button",
+          {
+            class: `filter-chip${activeTag ? "" : " active"}`,
+            type: "button",
+          },
+          ["All"],
+        );
+        allChip.addEventListener("click", () => updateRoute(setListRoute({ q, tag: "" }), "replace"));
+        filters.append(allChip);
+        for (const tag of availableTags) {
+          const chip = el(
+            "button",
+            {
+              class: `filter-chip${activeTag === tag ? " active" : ""}`,
+              type: "button",
+            },
+            [textNode(tag)],
+          );
+          chip.addEventListener("click", () =>
+            updateRoute(setListRoute({ q, tag: activeTag === tag ? "" : tag }), "replace"),
+          );
+          filters.append(chip);
+        }
+        content.append(filters);
+      }
       content.append(el("div", { class: "empty" }, ["No matches."]));
       return;
+    }
+
+    const availableTags = Array.from(new Set(manifest.recipes.flatMap((r) => r.tags))).sort();
+    if (availableTags.length) {
+      const filters = el("div", { class: "filter-bar" });
+      const allChip = el(
+        "button",
+        {
+          class: `filter-chip${activeTag ? "" : " active"}`,
+          type: "button",
+        },
+        ["All"],
+      );
+      allChip.addEventListener("click", () => updateRoute(setListRoute({ q, tag: "" }), "replace"));
+      filters.append(allChip);
+
+      for (const tag of availableTags) {
+        const chip = el(
+          "button",
+          {
+            class: `filter-chip${activeTag === tag ? " active" : ""}`,
+            type: "button",
+          },
+          [textNode(tag)],
+        );
+        chip.addEventListener("click", () =>
+          updateRoute(setListRoute({ q, tag: activeTag === tag ? "" : tag }), "replace"),
+        );
+        filters.append(chip);
+      }
+      content.append(filters);
     }
 
     const list = el("div", { class: "list" });
@@ -497,6 +705,9 @@ export function mountApp(root: HTMLElement) {
       if (r.yieldLines[1]) {
         summary.append(el("div", { class: "card-chip" }, [textNode(r.yieldLines[1])]));
       }
+      for (const tag of r.tags.slice(0, 2)) {
+        summary.append(el("div", { class: "card-chip" }, [textNode(tag)]));
+      }
       summary.append(
         el("div", { class: "card-chip card-chip-subtle" }, [
           textNode(`Updated ${formatDate(r.updatedISO)}`),
@@ -509,7 +720,14 @@ export function mountApp(root: HTMLElement) {
   };
 
   let searchTimer: number | undefined;
-  const onSearch = () => updateRoute(setListRoute(searchInput.value), "replace");
+  const onSearch = () =>
+    updateRoute(
+      setListRoute({
+        q: searchInput.value,
+        tag: parseRoute().kind === "list" ? parseRoute().tag : "",
+      }),
+      "replace",
+    );
   searchInput.addEventListener("input", () => {
     if (searchTimer) window.clearTimeout(searchTimer);
     searchTimer = window.setTimeout(onSearch, 120);
@@ -517,13 +735,17 @@ export function mountApp(root: HTMLElement) {
   searchInput.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape") {
       searchInput.value = "";
-      updateRoute(setListRoute(""), "replace");
+      const route = parseRoute();
+      updateRoute(
+        setListRoute({ q: "", tag: route.kind === "list" ? route.tag : "" }),
+        "replace",
+      );
       searchInput.blur();
     }
   });
 
   const goHome = () => {
-    updateRoute(setListRoute(""), "replace");
+    updateRoute(setListRoute({ q: "", tag: "" }), "replace");
     searchInput.focus();
   };
   logoBtn.addEventListener("click", goHome);
