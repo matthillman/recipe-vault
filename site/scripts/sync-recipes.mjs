@@ -27,6 +27,43 @@ function titleFromMarkdown(md) {
   return null;
 }
 
+function extractYieldLines(md) {
+  const lines = md.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!/^\*\*Yield \/ (Target|Pan Target)\*\*$/.test(lines[i].trim())) continue;
+
+    const out = [];
+    for (let j = i + 1; j < lines.length; j += 1) {
+      const line = lines[j].trim();
+      if (!line) {
+        if (out.length) break;
+        continue;
+      }
+      const bullet = /^[-*]\s+(.+)$/.exec(line);
+      if (!bullet) break;
+      out.push(bullet[1].trim());
+    }
+    return out;
+  }
+  return [];
+}
+
+function extractSectionHeadings(md) {
+  return md
+    .split(/\r?\n/)
+    .map((line) => /^##\s+(.+?)\s*$/.exec(line)?.[1]?.trim() ?? null)
+    .filter(Boolean);
+}
+
+function buildSearchText({ slug, title, yieldLines, sectionHeadings, md }) {
+  return [slug, title, ...yieldLines, ...sectionHeadings, md]
+    .join("\n")
+    .toLowerCase()
+    .replace(/[`*_>#-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
@@ -56,12 +93,17 @@ async function main() {
 
     const [md, stat] = await Promise.all([fs.readFile(srcPath, "utf8"), fs.stat(srcPath)]);
     const title = titleFromMarkdown(md) ?? titleizeSlug(slug);
+    const yieldLines = extractYieldLines(md);
+    const sectionHeadings = extractSectionHeadings(md);
 
     await fs.writeFile(outPath, md);
 
     recipes.push({
       slug,
       title,
+      yieldLines,
+      sectionHeadings,
+      searchText: buildSearchText({ slug, title, yieldLines, sectionHeadings, md }),
       updatedISO: new Date(stat.mtimeMs).toISOString(),
       updatedMs: stat.mtimeMs,
     });
@@ -96,4 +138,3 @@ main().catch((err) => {
   console.error(err);
   process.exitCode = 1;
 });
-

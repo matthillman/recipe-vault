@@ -4,6 +4,9 @@ import { marked } from "marked";
 type RecipeMeta = {
   slug: string;
   title: string;
+  yieldLines: string[];
+  sectionHeadings: string[];
+  searchText: string;
   updatedISO: string;
   updatedMs: number;
 };
@@ -19,6 +22,8 @@ type SortMode = "updated_desc" | "title_asc" | "title_desc";
 type Route =
   | { kind: "list"; q: string }
   | { kind: "recipe"; slug: string };
+
+type RouteMode = "push" | "replace";
 
 function parseRoute(): Route {
   const raw = window.location.hash.replace(/^#\/?/, "");
@@ -39,11 +44,11 @@ function setListRoute(q: string) {
   const params = new URLSearchParams();
   if (q.trim()) params.set("q", q.trim());
   const suffix = params.toString() ? `?${params.toString()}` : "";
-  window.location.hash = `#/list${suffix}`;
+  return `#/list${suffix}`;
 }
 
 function setRecipeRoute(slug: string) {
-  window.location.hash = `#/recipe/${encodeURIComponent(slug)}`;
+  return `#/recipe/${encodeURIComponent(slug)}`;
 }
 
 function formatDate(iso: string) {
@@ -157,6 +162,27 @@ function sortIcon() {
   );
 }
 
+function wakeIcon() {
+  return svgEl(
+    "svg",
+    {
+      class: "icon",
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      "stroke-width": "2",
+      "stroke-linecap": "round",
+      "stroke-linejoin": "round",
+      "aria-hidden": "true",
+    },
+    [
+      svgEl("rect", { x: "7", y: "3", width: "10", height: "18", rx: "2" }),
+      svgEl("path", { d: "M10 7h4" }),
+      svgEl("path", { d: "M12 15v2" }),
+    ],
+  );
+}
+
 export function mountApp(root: HTMLElement) {
   root.replaceChildren();
 
@@ -199,13 +225,15 @@ export function mountApp(root: HTMLElement) {
   searchWrap.append(searchInput);
 
   const keepAwakeBtn = el("button", {
-    class: "pill",
+    class: "pill icon-pill wake-pill",
     type: "button",
     title: supportsWakeLock()
       ? "Prevent the screen from sleeping while this tab is visible"
       : "Wake Lock not supported in this browser",
     "aria-label": "Toggle keep screen awake",
   });
+  const keepAwakeLabel = el("span", { class: "sr-only" });
+  keepAwakeBtn.append(wakeIcon(), keepAwakeLabel);
 
   const sortDetails = el("details") as HTMLDetailsElement;
   const sortSummary = el("summary", { class: "pill icon-pill", role: "button" });
@@ -233,12 +261,28 @@ export function mountApp(root: HTMLElement) {
   let wakeLockSentinel: unknown | null = null;
   let keepAwake = window.localStorage.getItem(KEEP_AWAKE_KEY) === "1";
   let sortMode: SortMode = parseSortMode(window.localStorage.getItem(SORT_MODE_KEY));
+  let lastListRoute = setListRoute("");
+
+  const updateRoute = (hash: string, mode: RouteMode) => {
+    const url = new URL(window.location.href);
+    url.hash = hash;
+    if (mode === "replace") {
+      window.history.replaceState(null, "", url);
+    } else {
+      window.history.pushState(null, "", url);
+    }
+    void render();
+  };
 
   const updateKeepAwakeUI = () => {
     const on = keepAwake && Boolean(wakeLockSentinel);
-    keepAwakeBtn.textContent = on ? "Awake: On" : "Awake: Off";
+    const label = on ? "Keep screen awake: on" : "Keep screen awake: off";
+    keepAwakeLabel.textContent = label;
+    keepAwakeBtn.title = label;
+    keepAwakeBtn.setAttribute("aria-label", label);
+    keepAwakeBtn.setAttribute("aria-pressed", on ? "true" : "false");
     keepAwakeBtn.classList.toggle("on", on);
-    keepAwakeBtn.toggleAttribute("disabled", !supportsWakeLock());
+    keepAwakeBtn.hidden = !supportsWakeLock();
   };
 
   const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
@@ -367,7 +411,7 @@ export function mountApp(root: HTMLElement) {
 
       const header = el("div", { class: "recipe-header" });
       const backBtn = el("button", { class: "back", type: "button" }, ["Back"]);
-      backBtn.addEventListener("click", () => window.history.back());
+      backBtn.addEventListener("click", () => updateRoute(lastListRoute, "replace"));
       const titleBlock = el("div");
       const title = el("h1", { class: "recipe-title" }, [
         textNode(meta?.title ?? route.slug),
@@ -381,6 +425,14 @@ export function mountApp(root: HTMLElement) {
       header.append(backBtn, titleBlock);
 
       content.append(header);
+
+      if (meta?.yieldLines?.length) {
+        const summary = el("div", { class: "recipe-summary" });
+        for (const line of meta.yieldLines) {
+          summary.append(el("div", { class: "recipe-chip" }, [textNode(line)]));
+        }
+        content.append(summary);
+      }
 
       const mdWrap = el("article", { class: "md" });
       mdWrap.append(el("div", { class: "empty" }, ["Loading…"]));
@@ -407,12 +459,13 @@ export function mountApp(root: HTMLElement) {
     }
 
     const q = route.q;
+    lastListRoute = setListRoute(q);
     searchInput.value = q;
 
     const normalized = q.trim().toLowerCase();
     const filtered = manifest.recipes
       .slice()
-      .filter((r) => (!normalized ? true : r.title.toLowerCase().includes(normalized)));
+      .filter((r) => (!normalized ? true : r.searchText.includes(normalized)));
 
     const recipes = filtered.slice();
     if (sortMode === "updated_desc") {
@@ -433,21 +486,30 @@ export function mountApp(root: HTMLElement) {
       const a = el("a", { class: "card", href: `#/recipe/${encodeURIComponent(r.slug)}` });
       a.addEventListener("click", (ev) => {
         ev.preventDefault();
-        setRecipeRoute(r.slug);
+        updateRoute(setRecipeRoute(r.slug), "push");
       });
 
       const h = el("h2", { class: "card-title" }, [textNode(r.title)]);
-      const metaLine = el("div", { class: "card-meta" }, [
-        `Updated ${formatDate(r.updatedISO)}`,
-      ]);
-      a.append(h, metaLine);
+      const summary = el("div", { class: "card-summary" });
+      if (r.yieldLines[0]) {
+        summary.append(el("div", { class: "card-chip card-chip-primary" }, [textNode(r.yieldLines[0])]));
+      }
+      if (r.yieldLines[1]) {
+        summary.append(el("div", { class: "card-chip" }, [textNode(r.yieldLines[1])]));
+      }
+      summary.append(
+        el("div", { class: "card-chip card-chip-subtle" }, [
+          textNode(`Updated ${formatDate(r.updatedISO)}`),
+        ]),
+      );
+      a.append(h, summary);
       list.append(a);
     }
     content.append(list);
   };
 
   let searchTimer: number | undefined;
-  const onSearch = () => setListRoute(searchInput.value);
+  const onSearch = () => updateRoute(setListRoute(searchInput.value), "replace");
   searchInput.addEventListener("input", () => {
     if (searchTimer) window.clearTimeout(searchTimer);
     searchTimer = window.setTimeout(onSearch, 120);
@@ -455,13 +517,13 @@ export function mountApp(root: HTMLElement) {
   searchInput.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape") {
       searchInput.value = "";
-      setListRoute("");
+      updateRoute(setListRoute(""), "replace");
       searchInput.blur();
     }
   });
 
   const goHome = () => {
-    setListRoute("");
+    updateRoute(setListRoute(""), "replace");
     searchInput.focus();
   };
   logoBtn.addEventListener("click", goHome);
@@ -476,6 +538,7 @@ export function mountApp(root: HTMLElement) {
 
   document.addEventListener("visibilitychange", () => void acquireWakeLock());
 
+  window.addEventListener("popstate", () => void render());
   window.addEventListener("hashchange", () => void render());
   updateKeepAwakeUI();
   updateSortUI();

@@ -37,6 +37,7 @@ body {
     "Apple Color Emoji", "Segoe UI Emoji";
   background: var(--bg);
   color: var(--text);
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -61,7 +62,7 @@ a {
 .topbar-inner {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 0.75rem 0.875rem;
+  padding: calc(0.75rem + env(safe-area-inset-top)) 0.875rem 0.75rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -135,6 +136,11 @@ a {
 .pill.on {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.wake-pill {
+  min-width: 2.5rem;
+  justify-content: center;
 }
 
 .brand {
@@ -282,9 +288,35 @@ a {
   margin: 0;
 }
 
-.card-meta {
-  margin-top: 0.25rem;
-  font-size: 0.85rem;
+.card-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+  margin-top: 0.65rem;
+}
+
+.card-chip,
+.recipe-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.85rem;
+  padding: 0.25rem 0.58rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 84%, var(--bg));
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.card-chip-primary,
+.recipe-chip {
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+.card-chip-subtle {
   color: var(--muted);
 }
 
@@ -325,6 +357,13 @@ a {
   font-size: 0.85rem;
 }
 
+.recipe-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
 .md {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -360,4 +399,50 @@ a {
 .md pre code {
   background: transparent;
   padding: 0;
+}
+
+@media (max-width: 560px) {
+  .topbar-inner {
+    padding: calc(0.65rem + env(safe-area-inset-top)) 0.75rem 0.65rem;
+    gap: 0.5rem;
+  }
+
+  .topbar-header {
+    grid-template-columns: auto 1fr auto;
+    gap: 0.5rem;
+  }
+
+  .topbar-center {
+    justify-content: flex-start;
+  }
+
+  .brand {
+    font-size: 0.98rem;
+  }
+
+  .controls {
+    gap: 0.4rem;
+  }
+
+  .content {
+    padding: 0.75rem;
+  }
+
+  .card {
+    padding: 0.82rem 0.85rem;
+  }
+
+  .recipe-header {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar-center {
+    display: none;
+  }
+
+  .topbar-header {
+    grid-template-columns: auto 1fr;
+  }
 }
