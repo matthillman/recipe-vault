@@ -11,6 +11,7 @@ This is the single entry point for planned work. Keep it short, prioritized, and
 
 ## Active / Next
 
+- [ ] Build URL/text recipe ingestion through CLI, iPhone Share Sheet, and draft-PR automation (See: `tasks/003-recipe-import-pipeline.md`)
 - [ ] Backfill canonical `## Notes` or equivalent notes sections across recipe files where useful
 
 ## Backlog

@@ -1,5 +1,6 @@
 out/
 /recipecards
+.tmp/
 
 # Web recipe box
 site/node_modules/

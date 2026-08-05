@@ -37,3 +37,18 @@ Workflow:
 
 - Pushes to `main` trigger production deploys automatically.
 - The build runs from `site/`, so changes to the web UI or Markdown content can both affect the deployed site.
+
+## Recipe capture API
+
+Cloudflare Pages Functions under `functions/api/` add two routes to the same deployment:
+
+- `POST /api/import`: authenticated recipe capture
+- `GET /api/openapi.json`: OpenAPI document for a private Custom GPT Action
+
+Configure these encrypted production secrets/variables in the Pages project:
+
+- `RECIPE_CAPTURE_TOKEN`: a random bearer token shared with approved clients
+- `GITHUB_ISSUES_TOKEN`: a fine-grained GitHub token scoped to `matthillman/recipe-vault`, with Issues read/write and Metadata read
+- `GITHUB_REPOSITORY`: `matthillman/recipe-vault`
+
+The function can create and search issues but cannot read or write repository contents. Complete setup and smoke tests are in `../docs/recipe-import.md`.
