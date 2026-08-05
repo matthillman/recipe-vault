@@ -1,0 +1,122 @@
+name: Import recipe
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Existing recipe import issue number
+        required: true
+        type: number
+
+concurrency:
+  group: recipe-import-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  import:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.issue.labels.*.name, 'recipe-import')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      RECIPE_IMPORT_MODEL: ${{ vars.RECIPE_IMPORT_MODEL || 'gpt-5.6-terra' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Load import request
+        run: |
+          mkdir -p .tmp
+          gh api "repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}" > .tmp/issue.json
+          node scripts/decode-import-issue.mjs --issue .tmp/issue.json --out .tmp/request.json
+          gh issue edit "${ISSUE_NUMBER}" --remove-label import-failed --add-label import-processing || \
+            gh issue edit "${ISSUE_NUMBER}" --add-label import-processing
+
+      - name: Import and validate recipe
+        id: importer
+        continue-on-error: true
+        run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "OPENAI_API_KEY is not configured" > .tmp/import-error.log
+            exit 1
+          fi
+          go run ./cmd/recipeimport import \
+            --request .tmp/request.json \
+            --out recipes \
+            --accessed "$(date -u +%F)" \
+            > .tmp/result.json 2> .tmp/import-error.log
+          make check >> .tmp/import-error.log 2>&1
+          path=$(jq -r '.path' .tmp/result.json)
+          slug=$(jq -r '.slug' .tmp/result.json)
+          case "${path}" in
+            recipes/*.md) ;;
+            *) echo "Importer returned unsafe path: ${path}" >&2; exit 1 ;;
+          esac
+          echo "path=${path}" >> "${GITHUB_OUTPUT}"
+          echo "slug=${slug}" >> "${GITHUB_OUTPUT}"
+
+      - name: Report import failure
+        if: steps.importer.outcome == 'failure'
+        run: |
+          {
+            echo "Recipe import failed. The issue remains open for correction or retry."
+            echo
+            echo '```text'
+            tail -c 6000 .tmp/import-error.log
+            echo
+            echo '```'
+          } > .tmp/failure-comment.md
+          gh issue comment "${ISSUE_NUMBER}" --body-file .tmp/failure-comment.md
+          gh issue edit "${ISSUE_NUMBER}" --remove-label import-processing --add-label import-failed
+
+      - name: Stop after reported failure
+        if: steps.importer.outcome == 'failure'
+        run: exit 1
+
+      - name: Commit imported recipe
+        id: commit
+        env:
+          RECIPE_PATH: ${{ steps.importer.outputs.path }}
+          RECIPE_SLUG: ${{ steps.importer.outputs.slug }}
+        run: |
+          branch="recipe-import/issue-${ISSUE_NUMBER}-${RECIPE_SLUG}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "${branch}"
+          git add -- "${RECIPE_PATH}"
+          git commit -m "recipes: import ${RECIPE_SLUG}"
+          git push --set-upstream origin "${branch}"
+          echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
+
+      - name: Open draft pull request
+        env:
+          BRANCH: ${{ steps.commit.outputs.branch }}
+          RECIPE_SLUG: ${{ steps.importer.outputs.slug }}
+        run: |
+          pr_url=$(gh pr create \
+            --draft \
+            --base main \
+            --head "${BRANCH}" \
+            --title "recipes: import ${RECIPE_SLUG}" \
+            --body "Imported conservatively from issue #${ISSUE_NUMBER}. Review all quantities and instructions before marking ready.\n\nCloses #${ISSUE_NUMBER}")
+          gh issue comment "${ISSUE_NUMBER}" --body "Draft recipe PR created: ${pr_url}"
+          gh issue edit "${ISSUE_NUMBER}" \
+            --remove-label recipe-import \
+            --remove-label import-processing \
+            --add-label import-pr-open

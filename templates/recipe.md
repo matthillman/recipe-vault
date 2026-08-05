@@ -16,9 +16,17 @@
 
 ## Notes
 
+- Status: (Tested / Imported, untested)
 - Variations (optional)
 - Common failure modes + fixes
 - Storage / reheating (optional)
+
+## Source (For Adapted / Imported Recipes)
+
+- Original: [Recipe title](https://example.com/recipe)
+- Author: (if known)
+- Published: (if known)
+- Accessed: YYYY-MM-DD
 
 ## Formula (Optional)
 

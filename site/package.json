@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "sync": "node ./scripts/sync-recipes.mjs",
+    "test": "node --test functions/api/import.test.mjs",
     "dev": "npm run sync && vite",
     "build": "npm run sync && vite build",
     "preview": "vite preview"
