@@ -111,6 +111,10 @@ func TestNormalizeUsesStructuredResponsesOutput(t *testing.T) {
 		if format["type"] != "json_schema" || format["strict"] != true {
 			t.Fatalf("structured output missing: %#v", payload)
 		}
+		instructions, _ := payload["instructions"].(string)
+		if !strings.Contains(instructions, "in clear English") || !strings.Contains(instructions, "Keep source_title in its original language") {
+			t.Fatalf("English-output instructions missing: %q", instructions)
+		}
 		output := `{"title":"Soup","yield":["4 servings"],"ingredients":[{"group":"","name":"Tomatoes","amount":"400 g"}],"process":["Simmer."],"notes":[],"warnings":[],"source_title":"Soup","source_author":"Ada","published":""}`
 		response, _ := json.Marshal(map[string]any{"output": []any{map[string]any{"type": "message", "content": []any{map[string]any{"type": "output_text", "text": output}}}}})
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(string(response))), Header: make(http.Header)}, nil

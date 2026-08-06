@@ -34,4 +34,5 @@ Capture recipe pages, public PDF/image URLs, or shared text from a CLI, iPhone S
 - Imports remain `Imported, untested` and reach the vault only through a draft PR.
 - Recipe JSON-LD is preferred; supplied text is the fallback; PDF/image sources use multimodal normalization and require review for OCR errors.
 - Missing facts are reported, never invented.
+- Canonical recipe content is normalized to English while the original source title is retained for provenance.
 - Raw webpages are not archived.
