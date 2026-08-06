@@ -2,15 +2,14 @@
 
 **Yield / Target**
 
-- 12
 - 3 baguettes
 
 ## Ingredients
 
-- King Arthur Unbleached All-Purpose Flour: 315 g
-- King Arthur Whole Wheat Flour: 78 g
+- All-Purpose Flour: 315 g
+- Whole Wheat Flour: 78 g
 - water: 325 g
-- table salt: 9 g
+- salt: 9 g
 - instant yeast: 1 g
 - sourdough starter, fed within the last 24 hours: 24 g
 
