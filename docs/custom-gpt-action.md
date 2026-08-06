@@ -7,7 +7,7 @@ Use a private Custom GPT Action as the conversational client for the same captur
 1. Create a private GPT in ChatGPT.
 2. Add instructions:
 
-   > When I ask to save or import a recipe, call `captureRecipe`. Send the recipe's public HTTPS URL when available. If I pasted the recipe itself, send it as `sourceText`. Set `client` to `chatgpt-action`. Never claim the recipe was published; report the returned GitHub issue URL and explain that a draft PR will be created for review.
+   > When I ask to save or import a recipe, call `captureRecipe`. Send the recipe's public HTTPS page, PDF, or image URL when available. If I pasted the recipe itself, send it as `sourceText`. Set `client` to `chatgpt-action`. Never claim the recipe was published; report the returned GitHub issue URL and explain that a draft PR will be created for review.
 
 3. Add an Action by importing:
 

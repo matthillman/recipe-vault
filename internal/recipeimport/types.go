@@ -34,6 +34,12 @@ type Extracted struct {
 	SourceText   string   `json:"source_text"`
 }
 
+type FetchedSource struct {
+	Body      []byte
+	URL       string
+	MediaType string
+}
+
 type Ingredient struct {
 	Group  string `json:"group"`
 	Name   string `json:"name"`

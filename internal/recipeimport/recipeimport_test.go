@@ -125,6 +125,131 @@ func TestNormalizeUsesStructuredResponsesOutput(t *testing.T) {
 	}
 }
 
+func TestFetchSourceSupportsHTMLPDFAndImages(t *testing.T) {
+	tests := []struct {
+		name        string
+		contentType string
+		body        []byte
+		wantType    string
+	}{
+		{name: "html", contentType: "text/html; charset=utf-8", body: []byte(recipeHTML), wantType: "text/html"},
+		{name: "pdf", contentType: "application/octet-stream", body: []byte("%PDF-1.7\nrecipe"), wantType: "application/pdf"},
+		{name: "jpeg", contentType: "image/jpg", body: []byte{0xff, 0xd8, 0xff, 0xdb}, wantType: "image/jpeg"},
+		{name: "png", contentType: "", body: []byte("\x89PNG\r\n\x1a\nrest"), wantType: "image/png"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client := doerFunc(func(req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader(string(test.body))),
+					Header:     http.Header{"Content-Type": []string{test.contentType}},
+					Request:    req,
+				}, nil
+			})
+			got, err := FetchSource(client, "https://EXAMPLE.com/recipe?utm_source=share")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.MediaType != test.wantType || got.URL != "https://example.com/recipe" {
+				t.Fatalf("unexpected source: %#v", got)
+			}
+		})
+	}
+}
+
+func TestFetchSourceRejectsUnsupportedContent(t *testing.T) {
+	client := doerFunc(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(strings.NewReader("plain text")),
+			Header:     http.Header{"Content-Type": []string{"text/plain"}},
+			Request:    req,
+		}, nil
+	})
+	_, err := FetchSource(client, "https://example.com/recipe.txt")
+	if err == nil || !strings.Contains(err.Error(), "unsupported source content type") {
+		t.Fatalf("expected unsupported-content failure, got %v", err)
+	}
+}
+
+func TestNormalizeMediaBuildsMultimodalResponsesInput(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		mediaType  string
+		wantType   string
+		wantField  string
+		wantPrefix string
+	}{
+		{name: "pdf", mediaType: "application/pdf", wantType: "input_file", wantField: "file_data", wantPrefix: "data:application/pdf;base64,"},
+		{name: "image", mediaType: "image/jpeg", wantType: "input_image", wantField: "image_url", wantPrefix: "data:image/jpeg;base64,"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			client := doerFunc(func(req *http.Request) (*http.Response, error) {
+				requestBody, _ := io.ReadAll(req.Body)
+				var payload map[string]any
+				if err := json.Unmarshal(requestBody, &payload); err != nil {
+					t.Fatal(err)
+				}
+				messages, ok := payload["input"].([]any)
+				if !ok || len(messages) != 1 {
+					t.Fatalf("missing message input: %#v", payload["input"])
+				}
+				message := messages[0].(map[string]any)
+				content := message["content"].([]any)
+				media := content[1].(map[string]any)
+				if media["type"] != test.wantType || media["detail"] != "high" {
+					t.Fatalf("unexpected media input: %#v", media)
+				}
+				if test.mediaType == "application/pdf" && media["filename"] != "recipe.pdf" {
+					t.Fatalf("unexpected PDF filename: %#v", media["filename"])
+				}
+				value, _ := media[test.wantField].(string)
+				if !strings.HasPrefix(value, test.wantPrefix) {
+					t.Fatalf("unexpected encoded input: %q", value)
+				}
+				output := `{"title":"Photo Soup","yield":["4 servings"],"ingredients":[{"group":"","name":"Tomatoes","amount":"400 g"}],"process":["Simmer."],"notes":[],"warnings":[],"source_title":"Photo Soup","source_author":"","published":""}`
+				response, _ := json.Marshal(map[string]any{"output": []any{map[string]any{"type": "message", "content": []any{map[string]any{"type": "output_text", "text": output}}}}})
+				return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(string(response))), Header: make(http.Header)}, nil
+			})
+
+			got, err := NormalizeMedia(context.Background(), FetchedSource{
+				Body: []byte("recipe bytes"), URL: "https://example.com/recipe.pdf", MediaType: test.mediaType,
+			}, "", "secret", "test-model", client)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(got.Warnings) != 1 || !strings.Contains(got.Warnings[0], "verify OCR") {
+				t.Fatalf("missing media warning: %#v", got.Warnings)
+			}
+		})
+	}
+}
+
+func TestNormalizeMediaRequiresAI(t *testing.T) {
+	_, err := NormalizeMedia(context.Background(), FetchedSource{MediaType: "application/pdf"}, "", "", "", nil)
+	if err == nil || !strings.Contains(err.Error(), "OPENAI_API_KEY") {
+		t.Fatalf("expected API key failure, got %v", err)
+	}
+}
+
+func TestImportRoutesPDFToMediaNormalization(t *testing.T) {
+	client := doerFunc(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: 200,
+			Body:       io.NopCloser(strings.NewReader("%PDF-1.7\nrecipe")),
+			Header:     http.Header{"Content-Type": []string{"application/pdf"}},
+			Request:    req,
+		}, nil
+	})
+	_, err := Import(context.Background(), Request{URL: "https://example.com/recipe.pdf"}, Options{
+		DryRun: true, NoAI: true, HTTPClient: client,
+	})
+	if err == nil || !strings.Contains(err.Error(), "OPENAI_API_KEY") {
+		t.Fatalf("expected media normalization failure, got %v", err)
+	}
+}
+
 func TestNormalizeOmitsProcessOnlyIngredientWithoutAmount(t *testing.T) {
 	client := doerFunc(func(req *http.Request) (*http.Response, error) {
 		output := `{"title":"Rolls","yield":["2 rolls"],"ingredients":[{"group":"","name":"Bread flour","amount":"159 g"},{"group":"","name":"Cornmeal","amount":"as needed"}],"process":["Sprinkle parchment with cornmeal."],"notes":[],"warnings":[],"source_title":"Rolls","source_author":"","published":""}`

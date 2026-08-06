@@ -23,6 +23,8 @@ Create a Shortcut named **Save to Recipe Vault**.
 8. Show a notification saying **Recipe queued for review**.
 9. Optionally add **Choose from Menu** with **Open issue** and **Done**; open `issueUrl` for the first choice.
 
-The normal Safari flow is one share-sheet tap plus the Shortcut selection. Shared selected text provides the fallback for sites that block server-side extraction.
+The normal Safari flow is one share-sheet tap plus the Shortcut selection. The same URL branch supports public recipe pages, public PDF URLs, and public PNG, JPEG, WebP, or non-animated GIF URLs. A Safari PDF viewer URL therefore needs no Shortcut changes.
+
+This URL-only media support does not upload a photo or file from the device. Sharing an item directly from Photos or Files requires a later binary-upload flow; for now, the image or PDF must already have a public HTTPS URL. Shared selected text remains the fallback for sites that block server-side extraction.
 
 Treat the Shortcut as a secret because it contains the capture bearer token. Do not publish its iCloud sharing link publicly.

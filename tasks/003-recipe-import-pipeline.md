@@ -2,7 +2,7 @@
 
 ## Goal
 
-Capture recipe pages or shared text from a CLI, iPhone Share Sheet, or private Custom GPT; normalize them conservatively; and produce a validated draft pull request for human review.
+Capture recipe pages, public PDF/image URLs, or shared text from a CLI, iPhone Share Sheet, or private Custom GPT; normalize them conservatively; and produce a validated draft pull request for human review.
 
 ## Progress Summary
 
@@ -16,6 +16,7 @@ Capture recipe pages or shared text from a CLI, iPhone Share Sheet, or private C
 - [x] An authenticated Cloudflare Pages endpoint queues imports as GitHub issues.
 - [x] A GitHub workflow converts queued issues into validated draft pull requests.
 - [x] iPhone Shortcut and private Custom GPT setup are documented against the same API.
+- [x] Public PDF and supported image URLs use the existing URL capture contract and multimodal normalization.
 - [x] Recipe, Go, site, and API tests pass.
 
 ## Implementation Steps
@@ -31,6 +32,6 @@ Capture recipe pages or shared text from a CLI, iPhone Share Sheet, or private C
 
 - GitHub Issues are the durable job queue and audit trail.
 - Imports remain `Imported, untested` and reach the vault only through a draft PR.
-- Recipe JSON-LD is preferred; supplied text is the fallback.
+- Recipe JSON-LD is preferred; supplied text is the fallback; PDF/image sources use multimodal normalization and require review for OCR errors.
 - Missing facts are reported, never invented.
 - Raw webpages are not archived.

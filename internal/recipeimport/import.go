@@ -27,8 +27,9 @@ func Import(ctx context.Context, request Request, opts Options) (Result, error) 
 	}
 
 	var extracted Extracted
+	var media *FetchedSource
 	if request.URL != "" {
-		body, finalURL, err := FetchPage(opts.HTTPClient, request.URL)
+		fetched, err := FetchSource(opts.HTTPClient, request.URL)
 		if err != nil {
 			if request.SourceText == "" {
 				return Result{}, err
@@ -39,11 +40,15 @@ func Import(ctx context.Context, request Request, opts Options) (Result, error) 
 			}
 			extracted.SourceURL = normalizedURL
 		} else {
-			extracted, err = ExtractHTML(body, finalURL)
-			if err != nil && strings.TrimSpace(extracted.SourceText) == "" && request.SourceText == "" {
-				return Result{}, err
+			if isHTMLMediaType(fetched.MediaType) {
+				extracted, err = ExtractHTML(string(fetched.Body), fetched.URL)
+				if err != nil && strings.TrimSpace(extracted.SourceText) == "" && request.SourceText == "" {
+					return Result{}, err
+				}
+			} else {
+				media = &fetched
 			}
-			extracted.SourceURL = finalURL
+			extracted.SourceURL = fetched.URL
 		}
 	}
 	if request.SourceText != "" {
@@ -56,7 +61,13 @@ func Import(ctx context.Context, request Request, opts Options) (Result, error) 
 	if opts.NoAI {
 		opts.APIKey = ""
 	}
-	normalized, err := Normalize(ctx, extracted, opts.APIKey, opts.Model, opts.OpenAIClient)
+	var normalized Normalized
+	var err error
+	if media != nil {
+		normalized, err = NormalizeMedia(ctx, *media, extracted.SourceText, opts.APIKey, opts.Model, opts.OpenAIClient)
+	} else {
+		normalized, err = Normalize(ctx, extracted, opts.APIKey, opts.Model, opts.OpenAIClient)
+	}
 	if err != nil {
 		return Result{}, err
 	}
