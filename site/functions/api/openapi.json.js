@@ -5,7 +5,7 @@ export function onRequestGet(context) {
     info: {
       title: "Recipe Vault Capture API",
       version: "1.0.0",
-      description: "Queue a recipe URL or supplied recipe text for conservative normalization and draft-PR review.",
+      description: "Queue a public recipe page, PDF, supported image URL, or supplied recipe text for conservative normalization and draft-PR review.",
     },
     servers: [{ url: origin }],
     paths: {
@@ -22,7 +22,7 @@ export function onRequestGet(context) {
                   type: "object",
                   additionalProperties: false,
                   properties: {
-                    url: { type: "string", format: "uri", maxLength: 2048, description: "Public HTTPS recipe page." },
+                    url: { type: "string", format: "uri", maxLength: 2048, description: "Public HTTPS recipe page, PDF, PNG, JPEG, WebP, or non-animated GIF URL." },
                     sourceText: { type: "string", maxLength: 32768, description: "Pasted recipe text when a page cannot be fetched." },
                     note: { type: "string", maxLength: 1024 },
                     client: { type: "string", maxLength: 64, default: "chatgpt-action" },

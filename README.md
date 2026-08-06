@@ -39,7 +39,7 @@ make cards-build RECIPES=standard-sourdough-loaf,overnight-sourdough-focaccia
 # Run the web UI locally
 make site-dev
 
-# Import a recipe page into a reviewable local Markdown file
+# Import a recipe page, public PDF, or public image into a reviewable local Markdown file
 make recipe-import URL=https://example.com/recipe
 ```
 
@@ -48,7 +48,7 @@ Notes:
 - `make check` skips Go tests if `go` is not installed.
 - The site sync step copies `recipes/*.md` into `site/public/recipes/`; those generated files are not source-of-truth.
 - The card generator may require `GOCACHE=/tmp/gocache`; the `Makefile` handles that.
-- Recipe import uses JSON-LD without an API key when possible. Set `OPENAI_API_KEY` for conservative AI normalization and text-only imports.
+- Recipe import uses JSON-LD without an API key when possible. Set `OPENAI_API_KEY` for conservative AI normalization, text-only imports, and all PDF/image imports.
 
 ## Recipe Schema
 
@@ -91,4 +91,4 @@ The mobile-first web UI under [site/](/Users/matt/Code/recipe-vault/site) browse
 
 ### Recipe Capture and Import
 
-The importer under `cmd/recipeimport/` accepts recipe URLs or supplied text, extracts structured recipe facts, normalizes them conservatively, and renders vault-format Markdown. The hosted capture path queues an authenticated request as a GitHub issue; GitHub Actions turns successful jobs into draft pull requests. See [docs/recipe-import.md](/Users/matt/Code/recipe-vault/docs/recipe-import.md) for setup and operations.
+The importer under `cmd/recipeimport/` accepts recipe page, public PDF, public image URLs, or supplied text; extracts structured recipe facts; normalizes them conservatively; and renders vault-format Markdown. The hosted capture path queues an authenticated request as a GitHub issue; GitHub Actions turns successful jobs into draft pull requests. See [docs/recipe-import.md](/Users/matt/Code/recipe-vault/docs/recipe-import.md) for setup and operations.

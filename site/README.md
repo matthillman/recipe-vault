@@ -42,7 +42,7 @@ Workflow:
 
 Cloudflare Pages Functions under `functions/api/` add two routes to the same deployment:
 
-- `POST /api/import`: authenticated recipe capture
+- `POST /api/import`: authenticated recipe page, public PDF/image URL, or supplied-text capture
 - `GET /api/openapi.json`: OpenAPI document for a private Custom GPT Action
 
 Configure these encrypted production secrets/variables in the Pages project:

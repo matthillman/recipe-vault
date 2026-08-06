@@ -109,12 +109,17 @@ jobs:
           BRANCH: ${{ steps.commit.outputs.branch }}
           RECIPE_SLUG: ${{ steps.importer.outputs.slug }}
         run: |
+          {
+            echo "Imported conservatively from issue #${ISSUE_NUMBER}. Review all quantities and instructions before marking ready."
+            echo
+            echo "Closes #${ISSUE_NUMBER}"
+          } > .tmp/pr-body.md
           pr_url=$(gh pr create \
             --draft \
             --base main \
             --head "${BRANCH}" \
             --title "recipes: import ${RECIPE_SLUG}" \
-            --body "Imported conservatively from issue #${ISSUE_NUMBER}. Review all quantities and instructions before marking ready.\n\nCloses #${ISSUE_NUMBER}")
+            --body-file .tmp/pr-body.md)
           gh issue comment "${ISSUE_NUMBER}" --body "Draft recipe PR created: ${pr_url}"
           gh issue edit "${ISSUE_NUMBER}" \
             --remove-label recipe-import \

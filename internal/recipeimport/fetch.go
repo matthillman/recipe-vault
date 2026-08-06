@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"net/url"
@@ -11,7 +12,10 @@ import (
 	"time"
 )
 
-const maxPageBytes = 5 << 20
+const (
+	maxHTMLBytes  = 5 << 20
+	maxMediaBytes = 10 << 20
+)
 
 func NormalizeSourceURL(raw string) (string, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
@@ -85,43 +89,93 @@ func publicIP(ip net.IP) bool {
 		!ip.IsLinkLocalUnicast() && !ip.IsLinkLocalMulticast() && !ip.IsMulticast()
 }
 
-func FetchPage(client HTTPDoer, sourceURL string) (string, string, error) {
+func FetchSource(client HTTPDoer, sourceURL string) (FetchedSource, error) {
 	normalized, err := NormalizeSourceURL(sourceURL)
 	if err != nil {
-		return "", "", err
+		return FetchedSource{}, err
 	}
 	if client == nil {
 		client = SecureHTTPClient()
 	}
 	req, err := http.NewRequest(http.MethodGet, normalized, nil)
 	if err != nil {
-		return "", "", err
+		return FetchedSource{}, err
 	}
-	req.Header.Set("Accept", "text/html,application/xhtml+xml")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/pdf,image/png,image/jpeg,image/webp,image/gif")
 	req.Header.Set("User-Agent", "recipe-vault-importer/1.0 (+personal recipe import)")
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", "", fmt.Errorf("fetch source: %w", err)
+		return FetchedSource{}, fmt.Errorf("fetch source: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", "", fmt.Errorf("fetch source: HTTP %d", resp.StatusCode)
+		return FetchedSource{}, fmt.Errorf("fetch source: HTTP %d", resp.StatusCode)
 	}
-	contentType := strings.ToLower(resp.Header.Get("Content-Type"))
-	if contentType != "" && !strings.Contains(contentType, "text/html") && !strings.Contains(contentType, "application/xhtml+xml") {
-		return "", "", fmt.Errorf("source is not HTML (%s)", contentType)
+	declaredType, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type"))
+	declaredType = canonicalMediaType(declaredType)
+	if declaredType != "" && declaredType != "application/octet-stream" && !supportedMediaType(declaredType) {
+		return FetchedSource{}, fmt.Errorf("unsupported source content type %q", declaredType)
 	}
-	limited := io.LimitReader(resp.Body, maxPageBytes+1)
+	if resp.ContentLength > maxMediaBytes {
+		return FetchedSource{}, fmt.Errorf("source exceeds %d bytes", maxMediaBytes)
+	}
+	limited := io.LimitReader(resp.Body, maxMediaBytes+1)
 	body, err := io.ReadAll(limited)
 	if err != nil {
-		return "", "", fmt.Errorf("read source: %w", err)
+		return FetchedSource{}, fmt.Errorf("read source: %w", err)
 	}
-	if len(body) > maxPageBytes {
-		return "", "", fmt.Errorf("source exceeds %d bytes", maxPageBytes)
+	if len(body) > maxMediaBytes {
+		return FetchedSource{}, fmt.Errorf("source exceeds %d bytes", maxMediaBytes)
 	}
-	finalURL, err := NormalizeSourceURL(resp.Request.URL.String())
+	detectedType, _, _ := mime.ParseMediaType(http.DetectContentType(body))
+	detectedType = canonicalMediaType(detectedType)
+	mediaType := declaredType
+	if mediaType == "" || mediaType == "application/octet-stream" {
+		mediaType = detectedType
+	}
+	if !supportedMediaType(mediaType) {
+		return FetchedSource{}, fmt.Errorf("unsupported source content type %q", mediaType)
+	}
+	if mediaType == "application/pdf" && detectedType != "application/pdf" {
+		return FetchedSource{}, fmt.Errorf("source declared as PDF but content is %q", detectedType)
+	}
+	if isImageMediaType(mediaType) && detectedType != mediaType {
+		return FetchedSource{}, fmt.Errorf("source declared as %s but content is %q", mediaType, detectedType)
+	}
+	if isHTMLMediaType(mediaType) && supportedMediaType(detectedType) && !isHTMLMediaType(detectedType) {
+		return FetchedSource{}, fmt.Errorf("source declared as HTML but content is %q", detectedType)
+	}
+	if isHTMLMediaType(mediaType) && len(body) > maxHTMLBytes {
+		return FetchedSource{}, fmt.Errorf("HTML source exceeds %d bytes", maxHTMLBytes)
+	}
+	finalRequest := resp.Request
+	if finalRequest == nil {
+		finalRequest = req
+	}
+	finalURL, err := NormalizeSourceURL(finalRequest.URL.String())
 	if err != nil {
-		return "", "", err
+		return FetchedSource{}, err
 	}
-	return string(body), finalURL, nil
+	return FetchedSource{Body: body, URL: finalURL, MediaType: mediaType}, nil
+}
+
+func isHTMLMediaType(mediaType string) bool {
+	return mediaType == "text/html" || mediaType == "application/xhtml+xml"
+}
+
+func supportedMediaType(mediaType string) bool {
+	return isHTMLMediaType(mediaType) || mediaType == "application/pdf" || isImageMediaType(mediaType)
+}
+
+func isImageMediaType(mediaType string) bool {
+	return mediaType == "image/png" || mediaType == "image/jpeg" ||
+		mediaType == "image/webp" || mediaType == "image/gif"
+}
+
+func canonicalMediaType(mediaType string) string {
+	mediaType = strings.ToLower(strings.TrimSpace(mediaType))
+	if mediaType == "image/jpg" {
+		return "image/jpeg"
+	}
+	return mediaType
 }

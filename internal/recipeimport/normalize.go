@@ -3,10 +3,13 @@ package recipeimport
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -43,12 +46,67 @@ func Normalize(ctx context.Context, extracted Extracted, apiKey, model string, c
 	if len(input) > 200_000 {
 		return Normalized{}, fmt.Errorf("extracted source exceeds 200000 bytes")
 	}
+	return normalizeWithInput(ctx, string(input), apiKey, model, client)
+}
+
+func NormalizeMedia(ctx context.Context, source FetchedSource, sourceText, apiKey, model string, client HTTPDoer) (Normalized, error) {
+	if strings.TrimSpace(apiKey) == "" {
+		return Normalized{}, fmt.Errorf("PDF and image sources require OpenAI normalization; set OPENAI_API_KEY")
+	}
+	if source.MediaType != "application/pdf" && !isImageMediaType(source.MediaType) {
+		return Normalized{}, fmt.Errorf("unsupported media normalization type %q", source.MediaType)
+	}
+	contextJSON, err := json.Marshal(map[string]string{
+		"source_url":  source.URL,
+		"source_text": strings.TrimSpace(sourceText),
+	})
+	if err != nil {
+		return Normalized{}, err
+	}
+	dataURL := "data:" + source.MediaType + ";base64," + base64.StdEncoding.EncodeToString(source.Body)
+	var mediaInput map[string]any
+	if source.MediaType == "application/pdf" {
+		mediaInput = map[string]any{
+			"type":      "input_file",
+			"filename":  sourcePDFFilename(source.URL),
+			"file_data": dataURL,
+			"detail":    "high",
+		}
+	} else {
+		mediaInput = map[string]any{
+			"type":      "input_image",
+			"image_url": dataURL,
+			"detail":    "high",
+		}
+	}
+	input := []any{map[string]any{
+		"role": "user",
+		"content": []any{
+			map[string]any{"type": "input_text", "text": string(contextJSON)},
+			mediaInput,
+		},
+	}}
+	normalized, err := normalizeWithInput(ctx, input, apiKey, model, client)
+	if err != nil {
+		return Normalized{}, err
+	}
+	normalized.Warnings = append(normalized.Warnings, "Imported from a PDF or image; verify OCR, quantities, and instructions against the source.")
+	return normalized, nil
+}
+
+func normalizeWithInput(ctx context.Context, input any, apiKey, model string, client HTTPDoer) (Normalized, error) {
+	if model == "" {
+		model = DefaultModel
+	}
+	if client == nil {
+		client = &http.Client{Timeout: 90 * time.Second}
+	}
 	payload := map[string]any{
 		"model":             model,
 		"store":             false,
 		"safety_identifier": "recipe-vault-personal-importer",
 		"instructions":      normalizationInstructions,
-		"input":             string(input),
+		"input":             input,
 		"reasoning":         map[string]any{"effort": "low"},
 		"text": map[string]any{
 			"format": map[string]any{
@@ -94,6 +152,21 @@ func Normalize(ctx context.Context, extracted Extracted, apiKey, model string, c
 		return Normalized{}, err
 	}
 	return normalized, nil
+}
+
+func sourcePDFFilename(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return "recipe.pdf"
+	}
+	name := path.Base(parsed.Path)
+	if name == "." || name == "/" || name == "" {
+		return "recipe.pdf"
+	}
+	if !strings.EqualFold(path.Ext(name), ".pdf") {
+		name += ".pdf"
+	}
+	return name
 }
 
 func sanitizeNormalized(recipe Normalized) Normalized {
