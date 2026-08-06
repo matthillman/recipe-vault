@@ -9,6 +9,7 @@
 5. Merging the reviewed PR publishes through the existing Cloudflare Pages deployment.
 
 Raw webpages are not archived. Imported recipes are marked `Imported, untested` and retain source attribution.
+Canonical recipe content is written in English even when the source is not. Proper names, brand names, quantities, and source facts are preserved; the original-language source title remains in provenance.
 
 ## Local CLI
 
